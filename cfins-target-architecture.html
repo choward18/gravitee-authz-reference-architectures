@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CFins × Gravitee — Target Architecture &amp; Agent Reference</title>
+<style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0}img,svg{max-width:100%}body{background:var(--paper);color:var(--ink);font-family:var(--f-body)}</style>
+<style>@page{size:A4 portrait;margin:12mm}@media print{*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}:root{color-scheme:light}.figure-wide{position:static;left:auto;transform:none;width:100%}.figure-wide .schematic .mermaid,.schematic .mermaid{min-width:0 !important}.mermaid svg{max-width:100% !important;height:auto !important}section,figure,.cards,.note,.card,.split,.glossary{break-inside:avoid}a{color:inherit;text-decoration:none}}</style>
+<style>
+  :root{
+    --paper:#FAFBFD; --surface:#FFFFFF; --ink:#131A2A; --muted:#5C6678;
+    --line:#E4E8EF; --line-strong:#D3DAE4;
+    --accent:#2C4BD6; --accent-soft:#EAEFFB; --accent-ink:#1B307F;
+    --good:#0C8E79; --good-soft:#E1F4EF;
+    --warn:#B57813; --warn-soft:#F8EFDC;
+    --risk:#BC463C; --risk-soft:#F8E6E3;
+    --fig-bg:#FBFCFE; --fig-line:#DDE3EC;
+    --shadow:0 1px 2px rgba(19,26,42,.05), 0 12px 28px -18px rgba(19,26,42,.22);
+    --maxw:1080px; --measure:74ch;
+    --font-display:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0C1119; --surface:#121A25; --ink:#E9EDF4; --muted:#98A2B4;
+      --line:#23303F; --line-strong:#30414F;
+      --accent:#7290F8; --accent-soft:#18233C; --accent-ink:#B9C8FF;
+      --good:#37C9AE; --good-soft:#123028;
+      --warn:#E0A94A; --warn-soft:#2E2510;
+      --risk:#E56A5E; --risk-soft:#331815;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 18px 40px -22px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#FAFBFD; --surface:#FFFFFF; --ink:#131A2A; --muted:#5C6678;
+    --line:#E4E8EF; --line-strong:#D3DAE4;
+    --accent:#2C4BD6; --accent-soft:#EAEFFB; --accent-ink:#1B307F;
+    --good:#0C8E79; --good-soft:#E1F4EF; --warn:#B57813; --warn-soft:#F8EFDC;
+    --risk:#BC463C; --risk-soft:#F8E6E3;
+    --shadow:0 1px 2px rgba(19,26,42,.05), 0 12px 28px -18px rgba(19,26,42,.22);
+  }
+  :root[data-theme="dark"]{
+    --paper:#0C1119; --surface:#121A25; --ink:#E9EDF4; --muted:#98A2B4;
+    --line:#23303F; --line-strong:#30414F;
+    --accent:#7290F8; --accent-soft:#18233C; --accent-ink:#B9C8FF;
+    --good:#37C9AE; --good-soft:#123028; --warn:#E0A94A; --warn-soft:#2E2510;
+    --risk:#E56A5E; --risk-soft:#331815;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 18px 40px -22px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--font-body); font-size:16px; line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px 96px}
+  .col{max-width:var(--measure)}
+  p{margin:0 0 1rem}
+  strong{font-weight:640}
+  a{color:var(--accent); text-decoration:none}
+
+  /* ---- eyebrow / labels ---- */
+  .eyebrow{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--muted); font-weight:600;
+    display:flex; align-items:center; gap:.6em;
+  }
+  .eyebrow::before{content:""; width:22px; height:2px; background:var(--accent); border-radius:2px}
+
+  /* ---- header band ---- */
+  header{border-bottom:1px solid var(--line); margin-bottom:40px}
+  .band{padding:52px 0 34px}
+  h1{
+    font-family:var(--font-display); font-weight:680; letter-spacing:-.02em;
+    font-size:clamp(28px,4.2vw,42px); line-height:1.08; text-wrap:balance;
+    margin:16px 0 14px; max-width:20ch;
+  }
+  .lede{font-size:clamp(17px,2vw,19px); color:var(--muted); max-width:60ch; margin:0}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:22px}
+  .chip{
+    font-family:var(--font-mono); font-size:12.5px; letter-spacing:.02em;
+    color:var(--muted); background:var(--surface); border:1px solid var(--line);
+    padding:5px 11px; border-radius:999px;
+  }
+  .chip b{color:var(--ink); font-weight:600}
+
+  /* ---- section ---- */
+  section{padding-top:52px}
+  .part-rule{
+    display:flex; align-items:baseline; gap:16px; margin:0 0 26px;
+    padding-top:8px; border-top:2px solid var(--ink);
+  }
+  .part-no{font-family:var(--font-mono); font-size:13px; color:var(--accent); font-weight:700; letter-spacing:.06em}
+  h2{
+    font-family:var(--font-display); font-weight:660; letter-spacing:-.015em;
+    font-size:clamp(22px,2.8vw,28px); line-height:1.15; margin:0; text-wrap:balance;
+  }
+  h3{
+    font-family:var(--font-display); font-weight:640; letter-spacing:-.01em;
+    font-size:18px; margin:34px 0 12px;
+  }
+
+  /* ---- thesis callout ---- */
+  .thesis{
+    background:linear-gradient(180deg,var(--accent-soft),transparent);
+    border:1px solid var(--line); border-left:3px solid var(--accent);
+    border-radius:12px; padding:22px 24px; margin:8px 0 6px;
+  }
+  .thesis .k{font-family:var(--font-display); font-weight:680; font-size:19px; letter-spacing:-.01em; margin:0 0 6px}
+  .thesis p{margin:0; color:var(--muted); max-width:66ch}
+
+  /* ---- spof cards ---- */
+  .spofs{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:20px}
+  .spof{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:18px 18px; box-shadow:var(--shadow);
+  }
+  .spof .tag{font-family:var(--font-mono); font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--risk); font-weight:700}
+  .spof h4{font-family:var(--font-display); font-size:16px; font-weight:640; margin:8px 0 6px}
+  .spof p{margin:0; font-size:14.5px; color:var(--muted)}
+
+  /* ---- before/after table ---- */
+  .tblwrap{overflow-x:auto; margin:8px 0 4px; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow)}
+  table{width:100%; border-collapse:collapse; font-size:14.5px; background:var(--surface)}
+  thead th{
+    text-align:left; font-family:var(--font-mono); font-size:11.5px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--muted); font-weight:700;
+    padding:13px 16px; border-bottom:1px solid var(--line-strong); white-space:nowrap;
+  }
+  tbody td{padding:13px 16px; border-bottom:1px solid var(--line); vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  td .req{font-weight:600; color:var(--ink)}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ---- status pills ---- */
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+    font-family:var(--font-mono); font-size:11.5px; letter-spacing:.02em; font-weight:600;
+    padding:3px 9px; border-radius:999px; border:1px solid transparent;
+  }
+  .pill::before{content:""; width:6px; height:6px; border-radius:50%}
+  .pill.native{color:var(--good); background:var(--good-soft); border-color:color-mix(in srgb,var(--good) 30%,transparent)}
+  .pill.native::before{background:var(--good)}
+  .pill.core{color:var(--accent-ink); background:var(--accent-soft); border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+  .pill.core::before{background:var(--accent)}
+  .pill.trial{color:var(--warn); background:var(--warn-soft); border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+  .pill.trial::before{background:var(--warn)}
+
+  /* ---- figure / diagram ---- */
+  figure{margin:22px 0 6px}
+  .schematic{
+    background:var(--fig-bg); border:1px solid var(--fig-line); border-radius:14px;
+    padding:20px 18px 8px; box-shadow:var(--shadow); overflow-x:auto;
+  }
+  .schematic .mermaid{min-width:640px; text-align:center; color:#16224A}
+  figcaption{
+    font-family:var(--font-mono); font-size:12.5px; color:var(--muted);
+    margin-top:12px; padding-left:2px; letter-spacing:.01em;
+  }
+  figcaption b{color:var(--ink); font-weight:600}
+
+  /* ---- unblock strip ---- */
+  .unblock{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:22px 0 4px}
+  .ub{background:var(--surface); border:1px solid var(--line); border-top:2px solid var(--good); border-radius:10px; padding:14px 15px}
+  .ub .h{font-family:var(--font-mono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--good); font-weight:700}
+  .ub h4{font-family:var(--font-display); font-size:15px; font-weight:640; margin:7px 0 4px}
+  .ub p{margin:0; font-size:13.5px; color:var(--muted)}
+  .ha{list-style:none; padding:0; margin:14px 0 4px; display:grid; gap:10px}
+  .ha li{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--good); border-radius:10px; padding:12px 15px; font-size:14.5px; color:var(--muted)}
+  .ha li b{color:var(--ink); font-weight:600}
+
+  /* ---- callout (critical path / caveats) ---- */
+  .note{
+    border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:20px 0 4px;
+    background:var(--surface);
+  }
+  .note.warn{border-left:3px solid var(--warn); background:linear-gradient(180deg,var(--warn-soft),transparent)}
+  .note.risk{border-left:3px solid var(--risk); background:linear-gradient(180deg,var(--risk-soft),transparent)}
+  .note .lbl{font-family:var(--font-mono); font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; margin-bottom:6px}
+  .note.warn .lbl{color:var(--warn)} .note.risk .lbl{color:var(--risk)}
+  .note p{margin:0; font-size:14.5px; color:var(--ink)}
+  .note p + p{margin-top:8px}
+
+  /* ---- talk track ---- */
+  .track{display:grid; gap:12px; margin-top:6px}
+  .layer{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; display:grid; grid-template-columns:180px 1fr; gap:18px; align-items:start;
+  }
+  .layer .name{font-family:var(--font-display); font-weight:640; font-size:15px}
+  .layer .name .sub{display:block; font-family:var(--font-mono); font-size:11.5px; color:var(--muted); font-weight:500; margin-top:4px; letter-spacing:.01em}
+  .layer .say{margin:0; font-size:14.5px; color:var(--muted)}
+  .layer .say b{color:var(--ink); font-weight:600}
+
+  /* ---- sequence ---- */
+  .seq{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:6px; counter-reset:step}
+  .step{
+    position:relative; background:var(--surface); border:1px solid var(--line);
+    border-radius:12px; padding:34px 15px 15px;
+  }
+  .step::before{
+    counter-increment:step; content:counter(step,decimal-leading-zero);
+    position:absolute; top:13px; left:15px; font-family:var(--font-mono); font-weight:700;
+    font-size:12.5px; color:var(--accent); letter-spacing:.06em;
+  }
+  .step h4{font-family:var(--font-display); font-size:15px; font-weight:640; margin:0 0 5px; letter-spacing:-.01em}
+  .step p{margin:0; font-size:13.5px; color:var(--muted)}
+  .step .arrow{position:absolute; top:12px; right:14px; color:var(--line-strong); font-size:15px}
+
+  /* ---- exec language ---- */
+  .exec{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:6px}
+  .who{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 18px}
+  .who .role{font-family:var(--font-mono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  .who h4{font-family:var(--font-display); font-size:16px; font-weight:640; margin:7px 0 8px}
+  .who blockquote{margin:0; font-size:14.5px; color:var(--ink); border-left:2px solid var(--accent); padding-left:12px; font-style:italic}
+
+  footer{margin-top:64px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; font-family:var(--font-mono); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+
+  @media (max-width:760px){
+    .spofs,.unblock,.seq,.exec{grid-template-columns:1fr}
+    .layer{grid-template-columns:1fr; gap:8px}
+    .step{padding-top:15px} .step::before{position:static; display:block; margin-bottom:6px}
+    .step .arrow{display:none}
+  }
+  @media (prefers-reduced-motion:no-preference){
+    .band,section{animation:rise .5s ease both}
+    section:nth-of-type(2){animation-delay:.04s}
+    @keyframes rise{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
+  }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="band">
+      <div class="eyebrow">Field CTO briefing · Account architecture</div>
+      <h1>Crum &amp; Forster × Gravitee: Target Architecture &amp; Agent Management Reference</h1>
+      <p class="lede">A single architecture story for a regulated property &amp; casualty carrier: retire the platform risks that are capping the roadmap, then unlock governed AI on the same runtime that already carries the transaction traffic.</p>
+      <div class="chips">
+        <span class="chip"><b>Regulated</b> · US P&amp;C carrier</span>
+        <span class="chip"><b>Migration</b> · self-hosted → hybrid managed</span>
+        <span class="chip"><b>Scale</b> · 3M+ API requests / month</span>
+        <span class="chip"><b>Expansion</b> · Universe + Agent Management</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- THESIS -->
+  <section aria-label="Thesis">
+    <div class="col">
+      <div class="eyebrow">The through-line</div>
+      <div class="thesis">
+        <p class="k">Your platform shape is capping your roadmap.</p>
+        <p>Every operational pain traces back to the self-hosted deployment, and every stated ambition — high availability, Universe, Agent Management — is blocked by it. The migration is not three purchases stacked together; it is one architectural move that <strong>retires risk</strong> and <strong>removes a ceiling</strong> at the same time.</p>
+      </div>
+    </div>
+
+    <div class="spofs">
+      <div class="spof">
+        <div class="tag">Single point of failure — infrastructure</div>
+        <h4>One database takes down everything</h4>
+        <p>The entire control plane — the console and the Management API — goes offline when the on-premises MongoDB goes down. The cloud backup is not a true failover. A control plane that dies with one database is a Single Point of Failure (SPOF).</p>
+      </div>
+      <div class="spof">
+        <div class="tag">Single point of failure — people</div>
+        <h4>One person owns the platform</h4>
+        <p>Every upgrade, patch, implementation, and the overdue high-availability work all run through a single administrator. That concentrates all platform risk — and all delivery bandwidth — in one person.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PART 1: TARGET ARCHITECTURE -->
+  <section aria-label="Target architecture">
+    <div class="part-rule">
+      <span class="part-no">PART 1</span>
+      <h2>Target architecture — hybrid-first, managed control plane</h2>
+    </div>
+    <div class="col">
+      <p><strong>Keep the data plane where it belongs, move the control plane to managed.</strong> The gateways stay on-premises for latency, data residency, and InfoSec comfort — the things a regulated carrier cannot compromise on. Gravitee Cloud takes over the control plane, which removes the single-database failure point and lifts the upgrade/patch burden off the one administrator.</p>
+    </div>
+
+    <figure>
+      <div class="schematic">
+<pre class="mermaid" data-processed="true"><svg id="mermaid-1785246840564" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 1067.7109375px;" viewBox="0 0 1067.7109375 409" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1785246840564{font-size:13px;fill:#16224A;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-1785246840564 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-1785246840564 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-1785246840564 .error-icon{fill:hsl(42.3529411765, 68%, 100%);}#mermaid-1785246840564 .error-text{fill:#000000;stroke:#000000;}#mermaid-1785246840564 .edge-thickness-normal{stroke-width:1px;}#mermaid-1785246840564 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1785246840564 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1785246840564 .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-1785246840564 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1785246840564 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1785246840564 .marker{fill:#8A93A5;stroke:#8A93A5;}#mermaid-1785246840564 .marker.cross{stroke:#8A93A5;}#mermaid-1785246840564 svg{font-size:13px;}#mermaid-1785246840564 p{margin:0;}#mermaid-1785246840564 .label{color:#16224A;}#mermaid-1785246840564 .cluster-label text{fill:#000000;}#mermaid-1785246840564 .cluster-label span{color:#000000;}#mermaid-1785246840564 .cluster-label span p{background-color:transparent;}#mermaid-1785246840564 .label text,#mermaid-1785246840564 span{fill:#16224A;color:#16224A;}#mermaid-1785246840564 .node rect,#mermaid-1785246840564 .node circle,#mermaid-1785246840564 .node ellipse,#mermaid-1785246840564 .node polygon,#mermaid-1785246840564 .node path{fill:#EAEFFB;stroke:#2C4BD6;stroke-width:1px;}#mermaid-1785246840564 .rough-node .label text,#mermaid-1785246840564 .node .label text,#mermaid-1785246840564 .image-shape .label,#mermaid-1785246840564 .icon-shape .label{text-anchor:middle;}#mermaid-1785246840564 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1785246840564 .rough-node .label,#mermaid-1785246840564 .node .label,#mermaid-1785246840564 .image-shape .label,#mermaid-1785246840564 .icon-shape .label{text-align:center;}#mermaid-1785246840564 .node.clickable{cursor:pointer;}#mermaid-1785246840564 .root .anchor path{fill:#8A93A5!important;stroke-width:0;stroke:#8A93A5;}#mermaid-1785246840564 .arrowheadPath{fill:#0b0b0b;}#mermaid-1785246840564 .edgePath .path{stroke:#8A93A5;stroke-width:1px;}#mermaid-1785246840564 .flowchart-link{stroke:#8A93A5;fill:none;}#mermaid-1785246840564 .edgeLabel{background-color:#E1F4EF;text-align:center;}#mermaid-1785246840564 .edgeLabel p{background-color:#E1F4EF;}#mermaid-1785246840564 .edgeLabel rect{opacity:0.5;background-color:#E1F4EF;fill:#E1F4EF;}#mermaid-1785246840564 .labelBkg{background-color:rgba(225, 244, 239, 0.5);}#mermaid-1785246840564 .cluster rect{fill:hsl(42.3529411765, 68%, 100%);stroke:hsl(42.3529411765, 28%, 90%);stroke-width:1px;}#mermaid-1785246840564 .cluster text{fill:#000000;}#mermaid-1785246840564 .cluster span{color:#000000;}#mermaid-1785246840564 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-size:12px;background:hsl(42.3529411765, 68%, 100%);border:1px solid hsl(42.3529411765, 28%, 90%);border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1785246840564 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#16224A;}#mermaid-1785246840564 rect.text{fill:none;stroke-width:0;}#mermaid-1785246840564 .icon-shape,#mermaid-1785246840564 .image-shape{background-color:#E1F4EF;text-align:center;}#mermaid-1785246840564 .icon-shape p,#mermaid-1785246840564 .image-shape p{background-color:#E1F4EF;padding:2px;}#mermaid-1785246840564 .icon-shape .label rect,#mermaid-1785246840564 .image-shape .label rect{opacity:0.5;background-color:#E1F4EF;fill:#E1F4EF;}#mermaid-1785246840564 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mermaid-1785246840564 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mermaid-1785246840564 .node .neo-node{stroke:#2C4BD6;}#mermaid-1785246840564 [data-look="neo"].node rect,#mermaid-1785246840564 [data-look="neo"].cluster rect,#mermaid-1785246840564 [data-look="neo"].node polygon{stroke:url(#mermaid-1785246840564-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840564 [data-look="neo"].swimlane.cluster rect{filter:none;}#mermaid-1785246840564 [data-look="neo"].node path{stroke:url(#mermaid-1785246840564-gradient);stroke-width:1px;}#mermaid-1785246840564 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840564 [data-look="neo"].node .neo-line path{stroke:#2C4BD6;filter:none;}#mermaid-1785246840564 [data-look="neo"].node circle{stroke:url(#mermaid-1785246840564-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840564 [data-look="neo"].node circle .state-start{fill:#000000;}#mermaid-1785246840564 [data-look="neo"].icon-shape .icon{fill:url(#mermaid-1785246840564-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840564 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#mermaid-1785246840564-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840564 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1785246840564_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840564_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840564_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840564_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="mermaid-1785246840564_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1785246840564_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1785246840564_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1785246840564_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1785246840564_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840564_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840564_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="mermaid-1785246840564_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M587.539,189.568L603.124,188.765C618.708,187.962,649.878,186.356,680.383,186.801C710.887,187.246,740.728,189.743,755.648,190.991L770.569,192.239" id="mermaid-1785246840564-L_GWP_CP_0" class=" edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GWP_CP_0" data-points="W3sieCI6NTg3LjUzOTA2MjUsInkiOjE4OS41NjgzODg4OTUxMTcxNX0seyJ4Ijo2ODEuMDQ2ODc1LCJ5IjoxODQuNzV9LHsieCI6Nzc0LjU1NDY4NzUsInkiOjE5Mi41NzI0ODc1MDc4NTkzfV0=" data-look="classic" marker-end="url(#mermaid-1785246840564_flowchart-v2-pointEnd)"></path><path d="M587.539,219.432L603.124,220.235C618.708,221.038,649.878,222.644,680.383,222.199C710.887,221.754,740.728,219.257,755.648,218.009L770.569,216.761" id="mermaid-1785246840564-L_GWN_CP_0" class=" edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GWN_CP_0" data-points="W3sieCI6NTg3LjUzOTA2MjUsInkiOjIxOS40MzE2MTExMDQ4ODI4NX0seyJ4Ijo2ODEuMDQ2ODc1LCJ5IjoyMjQuMjV9LHsieCI6Nzc0LjU1NDY4NzUsInkiOjIxNi40Mjc1MTI0OTIxNDA3fV0=" data-look="classic" marker-end="url(#mermaid-1785246840564_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(681.14781, 184.75844)"><g class="label" data-id="L_GWP_CP_0" transform="translate(-68.5078125, -9.75)"><foreignObject width="137.015625" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>config sync + telemetry</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(681.14781, 224.24156)"><g class="label" data-id="L_GWN_CP_0" transform="translate(-68.5078125, -9.75)"><foreignObject width="137.015625" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>config sync + telemetry</p></span></div></foreignObject></g></g></g><g class="nodes"><g class="root" transform="translate(766.5546875, 55.8936767578125)"><g class="clusters"><g class="cluster " id="mermaid-1785246840564-CLOUD" data-look="classic"><rect style="" x="8" y="8" width="285.15625" height="281.21263885498047"></rect><g class="cluster-label " transform="translate(31.4765625, 8)"><foreignObject width="238.203125" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>Gravitee Cloud — managed control plane</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M150.578,95L150.578,101.25C150.578,107.5,150.578,120,150.578,132.5C150.578,145,150.578,157.5,150.578,163.75L150.578,170" id="mermaid-1785246840564-L_CP_DATA_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_CP_DATA_0" data-points="W3sieCI6MTUwLjU3ODEyNSwieSI6OTV9LHsieCI6MTUwLjU3ODEyNSwieSI6MTMyLjV9LHsieCI6MTUwLjU3ODEyNSwieSI6MTcwfV0=" data-look="classic"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_CP_DATA_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default  " id="mermaid-1785246840564-flowchart-CP-10" data-look="classic" transform="translate(150.578125, 70.25)"><rect class="basic label-container" style="" x="-107.578125" y="-24.75" width="215.15625" height="49.5"></rect><g class="label" style="" transform="translate(-77.578125, -9.75)"><rect></rect><foreignObject width="155.15625" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Console + Management API</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840564-flowchart-DATA-11" data-look="classic" transform="translate(150.578125, 210.85631942749023)"><path d="M0,15.741169390306005 a106.2578125,15.741169390306005 0,0,0 212.515625,0 a106.2578125,15.741169390306005 0,0,0 -212.515625,0 l0,50.241169390306005 a106.2578125,15.741169390306005 0,0,0 212.515625,0 l0,-50.241169390306005" class="basic label-container outer-path" style="" label-offset-y="15.741169390306005" transform="translate(-106.2578125, -40.86175408545901)"></path><g class="label" style="" transform="translate(-98.7578125, 0.25)"><rect></rect><foreignObject width="197.515625" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Managed MongoDB + Elasticsearch</p></span></div></foreignObject></g></g></g></g><g class="root" transform="translate(0, 0)"><g class="clusters"><g class="cluster " id="mermaid-1785246840564-ONPREM" data-look="classic"><rect style="" x="8" y="8" width="579.5390625" height="393"></rect><g class="cluster-label " transform="translate(128.22265625, 8)"><foreignObject width="339.09375" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>CFins on-premises / private cloud — data plane stays here</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M252.93,95L239.608,101.25C226.287,107.5,199.643,120,186.322,131.833C173,143.667,173,154.833,173,160.417L173,166" id="mermaid-1785246840564-L_EDGE_GWP_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_EDGE_GWP_0" data-points="W3sieCI6MjUyLjkyOTg3NTc1MzAxMjA2LCJ5Ijo5NX0seyJ4IjoxNzMsInkiOjEzMi41fSx7IngiOjE3MywieSI6MTcwfV0=" data-look="classic" marker-end="url(#mermaid-1785246840564_flowchart-v2-pointEnd)"></path><path d="M358.437,95L371.759,101.25C385.081,107.5,411.724,120,425.046,131.833C438.367,143.667,438.367,154.833,438.367,160.417L438.367,166" id="mermaid-1785246840564-L_EDGE_GWN_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_EDGE_GWN_0" data-points="W3sieCI6MzU4LjQzNzMxMTc0Njk4OCwieSI6OTV9LHsieCI6NDM4LjM2NzE4NzUsInkiOjEzMi41fSx7IngiOjQzOC4zNjcxODc1LCJ5IjoxNzB9XQ==" data-look="classic" marker-end="url(#mermaid-1785246840564_flowchart-v2-pointEnd)"></path><path d="M173,219.5L173,225.75C173,232,173,244.5,173,256.333C173,268.167,173,279.333,173,284.917L173,290.5" id="mermaid-1785246840564-L_GWP_BE_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GWP_BE_0" data-points="W3sieCI6MTczLCJ5IjoyMTkuNX0seyJ4IjoxNzMsInkiOjI1N30seyJ4IjoxNzMsInkiOjI5NC41fV0=" data-look="classic" marker-end="url(#mermaid-1785246840564_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_EDGE_GWP_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_EDGE_GWN_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_GWP_BE_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default  " id="mermaid-1785246840564-flowchart-EDGE-0" data-look="classic" transform="translate(305.68359375, 70.25)"><rect class="basic label-container" style="" x="-106.234375" y="-24.75" width="212.46875" height="49.5"></rect><g class="label" style="" transform="translate(-76.234375, -9.75)"><rect></rect><foreignObject width="152.46875" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>NetScaler / NGINX routing</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840564-flowchart-GWP-1" data-look="classic" transform="translate(173, 194.75)"><rect class="basic label-container" style="" x="-101.1953125" y="-24.75" width="202.390625" height="49.5"></rect><g class="label" style="" transform="translate(-71.1953125, -9.75)"><rect></rect><foreignObject width="142.390625" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Gateways · 5 production</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840564-flowchart-GWN-2" data-look="classic" transform="translate(438.3671875, 194.75)"><rect class="basic label-container" style="" x="-114.171875" y="-24.75" width="228.34375" height="49.5"></rect><g class="label" style="" transform="translate(-84.171875, -9.75)"><rect></rect><foreignObject width="168.34375" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Gateways · 2 non-production</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840564-flowchart-BE-3" data-look="classic" transform="translate(173, 329)"><rect class="basic label-container" style="" x="-130" y="-34.5" width="260" height="69"></rect><g class="label" style="" transform="translate(-100, -19.5)"><rect></rect><foreignObject width="200" height="39"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Underwriting · Policy · Claims APIs</p></span></div></foreignObject></g></g></g></g></g></g></g><defs><filter id="mermaid-1785246840564-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="mermaid-1785246840564-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><linearGradient id="mermaid-1785246840564-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#2C4BD6" stop-opacity="1"></stop><stop offset="100%" stop-color="hsl(164.2105263158, 6.3414634146%, 81.9607843137%)" stop-opacity="1"></stop></linearGradient></svg></pre>
+      </div>
+      <figcaption><b>Hybrid target — day one.</b> Gateways and traffic never leave the carrier's estate; the managed control plane removes the Single Point of Failure and the upgrade toil. Same enforcement, different operating model. Active-active across locations builds on this — see the scoping question below.</figcaption>
+    </figure>
+
+    <h3>What the managed control plane unblocks</h3>
+    <div class="unblock">
+      <div class="ub">
+        <div class="h">Unblocks</div>
+        <h4>Path to high availability</h4>
+        <p>Removing the control-plane Single Point of Failure clears the groundwork for the 2-years-overdue redundant-gateway redesign — active-active scope to be confirmed.</p>
+      </div>
+      <div class="ub">
+        <div class="h">Unblocks</div>
+        <h4>Universe tier</h4>
+        <p>Agent-ready runtimes, Secrets, and multi-factor authentication — the tier that Agent Management requires and Galaxy cannot run.</p>
+      </div>
+      <div class="ub">
+        <div class="h">Unblocks</div>
+        <h4>Agent Management</h4>
+        <p>Governed LLM, MCP, and agent-to-agent traffic on top — the AI roadmap the enterprise-architecture team already specified.</p>
+      </div>
+    </div>
+
+    <h3>Active-active HA — the scoping question to put on the table</h3>
+    <div class="col">
+      <p>Active-active across cloud and on-prem is a stated goal, and the managed control plane removes the Single Point of Failure that has blocked it. But whether active-active is <strong>delivered in this migration</strong> or sequenced as a follow-on is an open question scoping has to answer — it depends on their routing and requirements, not on the licence. Put these on the table in the scope call:</p>
+    </div>
+    <ul class="ha">
+      <li><b>Routing — the gating item.</b> The redundant-gateway redesign has been stalled 2+ years on undocumented NetScaler / NGINX routing with no container documentation. Active-active cannot be designed until that is documented and re-architected. Is that reverse-engineering in this migration's scope?</li>
+      <li><b>Shared state — confirm the Redis answer.</b> Active-active distributed rate limiting and quota need shared state — the highly-available Redis Enterprise they ruled out as too costly. Confirm how the target provides it before committing to an active-active design.</li>
+      <li><b>Cross-site gateway pool — in scope or phase two?</b> A cloud gateway pool running alongside the on-prem pool is what makes it active-active <em>across</em> locations. Decide whether that stands up in this migration or is sequenced later.</li>
+      <li><b>Residency requirements — capture them.</b> Which traffic must stay pinned on-prem (via sharding tags / tenants) versus can use either pool? That is a requirement to pull from their InfoSec and architecture team, not an assumption to make for them.</li>
+    </ul>
+    <div class="col">
+      <p style="font-size:14px; color:var(--muted); margin-top:14px"><b>Recommended framing for the scope call:</b> confirm whether active-active is in scope for this migration. If yes, the routing re-architecture is the critical path and everything else follows from it. If not, the migration still retires the control-plane risk today, and active-active becomes a clean phase-two deliverable on the same foundation.</p>
+    </div>
+
+    <div class="note warn">
+      <div class="lbl">Critical path — own this in scoping</div>
+      <p>The redundant-gateway work has been stalled for 2+ years because traffic routes through <strong>undocumented NetScaler and NGINX configuration</strong> with no container documentation to work from. That routing is the migration's critical path — reverse-engineering and documenting it during scoping is what unsticks a two-year problem and earns credibility with the architecture team. The target design must account for it explicitly, not assume it away.</p>
+    </div>
+  </section>
+
+  <!-- PART 2: AGENT REFERENCE ARCHITECTURE -->
+  <section aria-label="Agent reference architecture">
+    <div class="part-rule">
+      <span class="part-no">PART 2</span>
+      <h2>Agent Management — reference architecture</h2>
+    </div>
+    <div class="col">
+      <p><strong>A regulated carrier cannot run ungoverned AI.</strong> The requirements the enterprise-architecture team wrote are not a wish list — they are a governance specification, and they map almost one-to-one onto Agent Management. The reference architecture is the same control-plane pattern used for the API estate, one protocol layer up: identity in front, policy in the middle, catalog as the source of truth, full lineage out the back.</p>
+    </div>
+
+    <figure>
+      <div class="schematic">
+<pre class="mermaid" data-processed="true"><svg id="mermaid-1785246840609" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 971px;" viewBox="0 0 971 1210" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1785246840609{font-size:13px;fill:#16224A;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-1785246840609 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-1785246840609 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-1785246840609 .error-icon{fill:#F8EFDC;}#mermaid-1785246840609 .error-text{fill:#071023;stroke:#071023;}#mermaid-1785246840609 .edge-thickness-normal{stroke-width:1px;}#mermaid-1785246840609 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1785246840609 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1785246840609 .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-1785246840609 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1785246840609 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1785246840609 .marker{fill:#8A93A5;stroke:#8A93A5;}#mermaid-1785246840609 .marker.cross{stroke:#8A93A5;}#mermaid-1785246840609 svg{font-size:13px;}#mermaid-1785246840609 p{margin:0;}#mermaid-1785246840609 .label{color:#16224A;}#mermaid-1785246840609 .cluster-label text{fill:#071023;}#mermaid-1785246840609 .cluster-label span{color:#071023;}#mermaid-1785246840609 .cluster-label span p{background-color:transparent;}#mermaid-1785246840609 .label text,#mermaid-1785246840609 span{fill:#16224A;color:#16224A;}#mermaid-1785246840609 .node rect,#mermaid-1785246840609 .node circle,#mermaid-1785246840609 .node ellipse,#mermaid-1785246840609 .node polygon,#mermaid-1785246840609 .node path{fill:#EAEFFB;stroke:#2C4BD6;stroke-width:1px;}#mermaid-1785246840609 .rough-node .label text,#mermaid-1785246840609 .node .label text,#mermaid-1785246840609 .image-shape .label,#mermaid-1785246840609 .icon-shape .label{text-anchor:middle;}#mermaid-1785246840609 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1785246840609 .rough-node .label,#mermaid-1785246840609 .node .label,#mermaid-1785246840609 .image-shape .label,#mermaid-1785246840609 .icon-shape .label{text-align:center;}#mermaid-1785246840609 .node.clickable{cursor:pointer;}#mermaid-1785246840609 .root .anchor path{fill:#8A93A5!important;stroke-width:0;stroke:#8A93A5;}#mermaid-1785246840609 .arrowheadPath{fill:#0b0b0b;}#mermaid-1785246840609 .edgePath .path{stroke:#8A93A5;stroke-width:1px;}#mermaid-1785246840609 .flowchart-link{stroke:#8A93A5;fill:none;}#mermaid-1785246840609 .edgeLabel{background-color:#E1F4EF;text-align:center;}#mermaid-1785246840609 .edgeLabel p{background-color:#E1F4EF;}#mermaid-1785246840609 .edgeLabel rect{opacity:0.5;background-color:#E1F4EF;fill:#E1F4EF;}#mermaid-1785246840609 .labelBkg{background-color:rgba(225, 244, 239, 0.5);}#mermaid-1785246840609 .cluster rect{fill:#F8EFDC;stroke:hsl(40.7142857143, 26.6666666667%, 81.7647058824%);stroke-width:1px;}#mermaid-1785246840609 .cluster text{fill:#071023;}#mermaid-1785246840609 .cluster span{color:#071023;}#mermaid-1785246840609 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-size:12px;background:#F8EFDC;border:1px solid hsl(40.7142857143, 26.6666666667%, 81.7647058824%);border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1785246840609 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#16224A;}#mermaid-1785246840609 rect.text{fill:none;stroke-width:0;}#mermaid-1785246840609 .icon-shape,#mermaid-1785246840609 .image-shape{background-color:#E1F4EF;text-align:center;}#mermaid-1785246840609 .icon-shape p,#mermaid-1785246840609 .image-shape p{background-color:#E1F4EF;padding:2px;}#mermaid-1785246840609 .icon-shape .label rect,#mermaid-1785246840609 .image-shape .label rect{opacity:0.5;background-color:#E1F4EF;fill:#E1F4EF;}#mermaid-1785246840609 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mermaid-1785246840609 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mermaid-1785246840609 .node .neo-node{stroke:#2C4BD6;}#mermaid-1785246840609 [data-look="neo"].node rect,#mermaid-1785246840609 [data-look="neo"].cluster rect,#mermaid-1785246840609 [data-look="neo"].node polygon{stroke:url(#mermaid-1785246840609-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840609 [data-look="neo"].swimlane.cluster rect{filter:none;}#mermaid-1785246840609 [data-look="neo"].node path{stroke:url(#mermaid-1785246840609-gradient);stroke-width:1px;}#mermaid-1785246840609 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840609 [data-look="neo"].node .neo-line path{stroke:#2C4BD6;filter:none;}#mermaid-1785246840609 [data-look="neo"].node circle{stroke:url(#mermaid-1785246840609-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840609 [data-look="neo"].node circle .state-start{fill:#000000;}#mermaid-1785246840609 [data-look="neo"].icon-shape .icon{fill:url(#mermaid-1785246840609-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840609 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#mermaid-1785246840609-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1785246840609 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1785246840609_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840609_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840609_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840609_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="mermaid-1785246840609_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1785246840609_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1785246840609_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1785246840609_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1785246840609_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840609_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1785246840609_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="mermaid-1785246840609_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M523,958.25L523,983.208C523,1008.167,523,1058.083,523,1086.542C523,1115,523,1122,523,1125.5L523,1129" id="mermaid-1785246840609-L_PDP_CAT_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_PDP_CAT_0" data-points="W3sieCI6NTIzLCJ5Ijo5NTguMjV9LHsieCI6NTIzLCJ5IjoxMTA4fSx7IngiOjUyMywieSI6MTEzM31d" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path><path d="M195.5,201.75L195.5,226.708C195.5,251.667,195.5,301.583,198.423,330.188C201.347,358.793,207.193,366.086,210.117,369.733L213.04,373.379" id="mermaid-1785246840609-L_ID_GW_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_ID_GW_0" data-points="W3sieCI6MTk1LjUsInkiOjIwMS43NX0seyJ4IjoxOTUuNSwieSI6MzUxLjV9LHsieCI6MjE1LjU0MjE4OTYyMDA4MTQyLCJ5IjozNzYuNX1d" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path><path d="M473.445,669.216L481.704,677.68C489.964,686.144,506.482,703.072,514.741,735.828C523,768.583,523,817.167,523,841.458L523,865.75" id="mermaid-1785246840609-L_GW_PDP_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GW_PDP_0" data-points="W3sieCI6NDczLjQ0NTMxMjUsInkiOjY2OS4yMTU3NTg0ODQzMzV9LHsieCI6NTIzLCJ5Ijo3MjB9LHsieCI6NTIzLCJ5Ijo4NjkuNzV9XQ==" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path><path d="M473.445,584.742L533.371,607.285C593.297,629.828,713.148,674.914,773.074,723.374C833,771.833,833,823.667,833,849.583L833,875.5" id="mermaid-1785246840609-L_GW_OBS_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GW_OBS_0" data-points="W3sieCI6NDczLjQ0NTMxMjUsInkiOjU4NC43NDE4NzMwOTU4Nzk5fSx7IngiOjgzMywieSI6NzIwfSx7IngiOjgzMywieSI6ODc5LjV9XQ==" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path><path d="M212.977,663.583L203.397,672.986C193.818,682.389,174.659,701.194,165.441,714.101C156.222,727.007,156.945,734.014,157.306,737.518L157.667,741.021" id="mermaid-1785246840609-L_GW_L_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GW_L_0" data-points="W3sieCI6MjEyLjk3NjU2MjUsInkiOjY2My41ODMxNjY4NTM5NTZ9LHsieCI6MTU1LjUsInkiOjcyMH0seyJ4IjoxNTguMDc3MzE5NTg3NjI4ODYsInkiOjc0NX1d" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path><path d="M212.977,678.828L206.73,685.69C200.484,692.552,187.992,706.276,181.746,716.638C175.5,727,175.5,734,175.5,737.5L175.5,741" id="mermaid-1785246840609-L_GW_M_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GW_M_0" data-points="W3sieCI6MjEyLjk3NjU2MjUsInkiOjY3OC44Mjc2MzA3ODIxMzA3fSx7IngiOjE3NS41LCJ5Ijo3MjB9LHsieCI6MTc1LjUsInkiOjc0NX1d" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path><path d="M215.542,695L212.202,699.167C208.861,703.333,202.181,711.667,198.479,719.337C194.778,727.007,194.055,734.014,193.694,737.518L193.333,741.021" id="mermaid-1785246840609-L_GW_APIS_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_GW_APIS_0" data-points="W3sieCI6MjE1LjU0MjE4OTYyMDA4MTQyLCJ5Ijo2OTV9LHsieCI6MTk1LjUsInkiOjcyMH0seyJ4IjoxOTIuOTIyNjgwNDEyMzcxMTQsInkiOjc0NX1d" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path><path d="M482.279,326.5L482.053,330.667C481.826,334.833,481.374,343.167,478.433,350.966C475.492,358.765,470.061,366.031,467.346,369.663L464.631,373.296" id="mermaid-1785246840609-L_A1_GW_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_A1_GW_0" data-points="W3sieCI6NDgyLjI3ODcyNzEwMzEyMDgsInkiOjMyNi41fSx7IngiOjQ4MC45MjE4NzUsInkiOjM1MS41fSx7IngiOjQ2Mi4yMzY1Mzc0ODMwMzkzNCwieSI6Mzc2LjV9XQ==" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path><path d="M499.565,326.5L499.791,330.667C500.017,334.833,500.47,343.167,496.55,352.177C492.63,361.187,484.338,370.874,480.192,375.718L476.046,380.561" id="mermaid-1785246840609-L_A2_GW_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_A2_GW_0" data-points="W3sieCI6NDk5LjU2NTAyMjg5Njg3OTIsInkiOjMyNi41fSx7IngiOjUwMC45MjE4NzUsInkiOjM1MS41fSx7IngiOjQ3My40NDUzMTI1LCJ5IjozODMuNjAwMjI1MzkyNTc5NH1d" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path><path d="M516.851,326.5L517.53,330.667C518.208,334.833,519.565,343.167,512.794,355.057C506.022,366.948,491.122,382.396,483.672,390.12L476.222,397.844" id="mermaid-1785246840609-L_A3_GW_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_A3_GW_0" data-points="W3sieCI6NTE2Ljg1MTMxODY5MDYzNzgsInkiOjMyNi41fSx7IngiOjUyMC45MjE4NzUsInkiOjM1MS41fSx7IngiOjQ3My40NDUzMTI1LCJ5Ijo0MDAuNzIzNTEyOTkwNzI0MX1d" data-look="classic" marker-end="url(#mermaid-1785246840609_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_PDP_CAT_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_ID_GW_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_GW_PDP_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_GW_OBS_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_GW_L_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_GW_M_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_GW_APIS_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_A1_GW_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_A2_GW_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_A3_GW_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g></g><g class="nodes"><g class="root" transform="translate(0, 737)"><g class="clusters"><g class="cluster " id="mermaid-1785246840609-UP" data-look="classic"><rect style="" x="8" y="8" width="335" height="338"></rect><g class="cluster-label " transform="translate(144.9375, 8)"><foreignObject width="61.125" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>Upstreams</p></span></div></foreignObject></g></g></g><g class="edgePaths"></g><g class="edgeLabels"></g><g class="nodes"><g class="node default  " id="mermaid-1785246840609-flowchart-L-10" data-look="classic" transform="translate(175.5, 77.5)"><rect class="basic label-container" style="" x="-130" y="-34.5" width="260" height="69"></rect><g class="label" style="" transform="translate(-100, -19.5)"><rect></rect><foreignObject width="200" height="39"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>LLM providers — Bedrock · Azure · Vertex</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-M-11" data-look="classic" transform="translate(175.5, 186.75)"><rect class="basic label-container" style="" x="-127.3203125" y="-24.75" width="254.640625" height="49.5"></rect><g class="label" style="" transform="translate(-97.3203125, -9.75)"><rect></rect><foreignObject width="194.640625" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>MCP servers + Composite (Studio)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-APIS-12" data-look="classic" transform="translate(175.5, 286.25)"><rect class="basic label-container" style="" x="-115.0625" y="-24.75" width="230.125" height="49.5"></rect><g class="label" style="" transform="translate(-85.0625, -9.75)"><rect></rect><foreignObject width="170.125" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Existing APIs &amp; Kafka as Tools</p></span></div></foreignObject></g></g></g></g><g class="root" transform="translate(212.40625, 368.5)"><g class="clusters"><g class="cluster " id="mermaid-1785246840609-GW" data-look="classic"><rect style="" x="0.5703125" y="8" width="260.46875" height="318.5"></rect><g class="cluster-label " transform="translate(4.5703125, 8)"><foreignObject width="252.46875" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>AI Gateway — one runtime, three protocols</p></span></div></foreignObject></g></g></g><g class="edgePaths"></g><g class="edgeLabels"></g><g class="nodes"><g class="node default  " id="mermaid-1785246840609-flowchart-LLMP-4" data-look="classic" transform="translate(130.8046875, 67.75)"><rect class="basic label-container" style="" x="-58.953125" y="-24.75" width="117.90625" height="49.5"></rect><g class="label" style="" transform="translate(-28.953125, -9.75)"><rect></rect><foreignObject width="57.90625" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>LLM Proxy</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-MCPP-5" data-look="classic" transform="translate(130.8046875, 167.25)"><rect class="basic label-container" style="" x="-85.3046875" y="-24.75" width="170.609375" height="49.5"></rect><g class="label" style="" transform="translate(-55.3046875, -9.75)"><rect></rect><foreignObject width="110.609375" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>MCP Proxy + Studio</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-A2AP-6" data-look="classic" transform="translate(130.8046875, 266.75)"><rect class="basic label-container" style="" x="-58.4765625" y="-24.75" width="116.953125" height="49.5"></rect><g class="label" style="" transform="translate(-28.4765625, -9.75)"><rect></rect><foreignObject width="56.953125" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>A2A Proxy</p></span></div></foreignObject></g></g></g></g><g class="root" transform="translate(367.5, 0)"><g class="clusters"><g class="cluster " id="mermaid-1785246840609-CONSUMERS" data-look="classic"><rect style="" x="8" y="8" width="230.84375" height="318.5"></rect><g class="cluster-label " transform="translate(64.96875, 8)"><foreignObject width="116.90625" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>Agents &amp; consumers</p></span></div></foreignObject></g></g></g><g class="edgePaths"></g><g class="edgeLabels"></g><g class="nodes"><g class="node default  " id="mermaid-1785246840609-flowchart-A1-0" data-look="classic" transform="translate(123.421875, 67.75)"><rect class="basic label-container" style="" x="-74.0703125" y="-24.75" width="148.140625" height="49.5"></rect><g class="label" style="" transform="translate(-44.0703125, -9.75)"><rect></rect><foreignObject width="88.140625" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Desktop agents</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-A2-1" data-look="classic" transform="translate(123.421875, 167.25)"><rect class="basic label-container" style="" x="-71.0625" y="-24.75" width="142.125" height="49.5"></rect><g class="label" style="" transform="translate(-41.0625, -9.75)"><rect></rect><foreignObject width="82.125" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Hosted agents</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-A3-2" data-look="classic" transform="translate(123.421875, 266.75)"><rect class="basic label-container" style="" x="-77.921875" y="-24.75" width="155.84375" height="49.5"></rect><g class="label" style="" transform="translate(-47.921875, -9.75)"><rect></rect><foreignObject width="95.84375" height="19.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel "><p>Workload agents</p></span></div></foreignObject></g></g></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-ID-3" data-look="classic" transform="translate(195.5, 167.25)"><rect class="basic label-container" style="" x="-130" y="-34.5" width="260" height="69"></rect><g class="label" style="" transform="translate(-100, -19.5)"><rect></rect><foreignObject width="200" height="39"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Agent Identity — CIMD · SPIFFE/SPIRE · hosted</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-PDP-7" data-look="classic" transform="translate(523, 914)"><rect class="basic label-container" style="" x="-130" y="-44.25" width="260" height="88.5"></rect><g class="label" style="" transform="translate(-100, -29.25)"><rect></rect><foreignObject width="200" height="58.5"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Authorization Management — Fine-Grained Authorization (Cedar)</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-CAT-8" data-look="classic" transform="translate(523, 1167.5)"><rect class="basic label-container" style="" x="-130" y="-34.5" width="260" height="69"></rect><g class="label" style="" transform="translate(-100, -19.5)"><rect></rect><foreignObject width="200" height="39"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Catalog — Models · MCP servers · Tools · Agents · Prompts</p></span></div></foreignObject></g></g><g class="node default  " id="mermaid-1785246840609-flowchart-OBS-9" data-look="classic" transform="translate(833, 914)"><rect class="basic label-container" style="" x="-130" y="-34.5" width="260" height="69"></rect><g class="label" style="" transform="translate(-100, -19.5)"><rect></rect><foreignObject width="200" height="39"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel "><p>Observability &amp; lineage — cost · alerts · audit</p></span></div></foreignObject></g></g></g></g></g><defs><filter id="mermaid-1785246840609-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="mermaid-1785246840609-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><linearGradient id="mermaid-1785246840609-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#2C4BD6" stop-opacity="1"></stop><stop offset="100%" stop-color="hsl(164.2105263158, 6.3414634146%, 81.9607843137%)" stop-opacity="1"></stop></linearGradient></svg></pre>
+      </div>
+      <figcaption><b>Governed-AI reference.</b> Every agent is identified, every call is authorized against catalogued entities, every hop is traced. The bridge to existing infrastructure is the Catalog — a REST API or Kafka topic becomes a governed Tool without the upstream system learning anything new.</figcaption>
+    </figure>
+
+    <h3>Requirement alignment — their spec, mapped</h3>
+    <div class="tblwrap">
+      <table>
+        <thead>
+          <tr><th>Requirement (architecture-team written)</th><th>Gravitee Agent Management</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="req">Centralized, discoverable agent registry</span></td><td>Catalog — Agents &amp; MCP servers, with registry-node participation</td><td><span class="pill native">Native</span></td></tr>
+          <tr><td><span class="req">MCP &amp; tools cataloging with discovery</span></td><td>Catalog — MCP servers &amp; Tools; MCP Studio for composition</td><td><span class="pill native">Native</span></td></tr>
+          <tr><td><span class="req">Centralized inbound &amp; outbound agent identity</span></td><td>Agent Identity (inbound) + MCP Server Mediation / token exchange (outbound)</td><td><span class="pill native">Native</span></td></tr>
+          <tr><td><span class="req">Analytics, usage alerts, cost dashboards</span></td><td>Observability &amp; lineage + LLM Proxy cost tracking + Alert Engine <em>(already owned)</em></td><td><span class="pill native">Native</span></td></tr>
+          <tr><td><span class="req">Support for all major hyperscalers (AWS/Azure/GCP)</span></td><td>Catalog federation (Bedrock, Foundry, Vertex) + multi-provider LLM Proxy</td><td><span class="pill native">Native</span></td></tr>
+          <tr><td><span class="req">Governance workflow</span></td><td>Authorization Management — catalog-aware Fine-Grained Authorization + lifecycle</td><td><span class="pill core">Core</span></td></tr>
+          <tr><td><span class="req">Security — prompt injection, tool-usage controls</span></td><td>LLM Proxy guardrails / PII filtering + per-tool authorization + MCP access control</td><td><span class="pill native">Native</span></td></tr>
+          <tr><td><span class="req">DevOps support &amp; automation</span></td><td>GitOps / DevOps deployment — doubles with their existing API DevOps ask</td><td><span class="pill native">Native</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13.5px; color:var(--muted); margin-top:12px" class="col">The architecture team's requirements land natively on Agent Management — the clean alignment is itself the proof point. Sequencing guidance for the trial is below.</p>
+
+    <h3>Talk track — layer by layer</h3>
+    <div class="track">
+      <div class="layer">
+        <div class="name">Agent Identity<span class="sub">CIMD · SPIFFE/SPIRE · hosted</span></div>
+        <p class="say">"Without identity, every other control collapses." Desktop agents authenticate via <b>Client ID Metadata Document</b> bound to the human's enterprise single sign-on; workloads (CI, workflow steps) get short-lived, auto-rotating <b>SPIFFE</b> credentials with an hour-bounded blast radius. A leaked key in a config file has <em>unbounded</em> blast radius — this is the answer to the risk every security lead is already worried about.</p>
+      </div>
+      <div class="layer">
+        <div class="name">AI Gateway<span class="sub">LLM · MCP · A2A, one runtime</span></div>
+        <p class="say">One enforcement point for all agent traffic — same authentication, policy, and observability chain across model calls, tool calls, and agent-to-agent delegation. The <b>LLM Proxy</b> also delivers real-time <b>cost attribution by team and use case</b> — the answer to the CFO's inevitable "how would we even know what we're spending?"</p>
+      </div>
+      <div class="layer">
+        <div class="name">Authorization Management<span class="sub">Fine-Grained Authorization · Cedar</span></div>
+        <p class="say">Policy is written against <b>real catalogued entities</b>, not opaque strings — "deny <em>delete_repository</em> on that MCP server for this agent" is a one-line policy. The decision engine runs <em>inside</em> the gateway, so authorization is on the hot path with no network hop. This is the layer that turns "we adopted AI" into "our CISO signed off on it."</p>
+      </div>
+      <div class="layer">
+        <div class="name">Catalog<span class="sub">the source of truth</span></div>
+        <p class="say">The bridge to ten years of accumulated integration work: an existing REST API becomes an <b>API Tool</b>, a Kafka topic becomes a <b>Kafka Tool</b>, an internal document becomes a Resource — all agent-accessible without redevelopment. The mainframe wrapper nobody wants to touch never learns MCP; the Catalog absorbs the heterogeneity.</p>
+      </div>
+      <div class="layer">
+        <div class="name">MCP Studio<span class="sub">Composite MCP servers</span></div>
+        <p class="say">Don't expose eight raw MCP servers to one agent. <b>Compose the exact toolkit</b> that agent needs — a curated set of tools, resources, and prompts with PII redaction and per-call authorization — as a named, versioned, governed artifact. This is curation as a security control, not just convenience.</p>
+      </div>
+      <div class="layer">
+        <div class="name">Observability &amp; lineage<span class="sub">cost · alerts · audit</span></div>
+        <p class="say">"You can't govern what you can't see." Every hop is traced with identity, tool, latency, policy decision, and cost, stitched into a navigable graph — the complete audit trail for the moment a regulator or customer asks <b>"did your AI agent see my data?"</b> Their existing <b>Alert Engine</b> is already the on-ramp here.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PART 3: SEQUENCE -->
+  <section aria-label="Sequence">
+    <div class="part-rule">
+      <span class="part-no">PART 3</span>
+      <h2>The sequence — one path, four moves</h2>
+    </div>
+    <div class="seq">
+      <div class="step"><span class="arrow">→</span><h4>Migrate hybrid-first</h4><p>Gateways stay on-prem; managed control plane comes online. Removes the single-database failure point.</p></div>
+      <div class="step"><span class="arrow">→</span><h4>Retire the risks</h4><p>Upgrade toil and the sole-administrator dependency move to managed. High-availability redesign gets unstuck.</p></div>
+      <div class="step"><span class="arrow">→</span><h4>Enable Universe</h4><p>Agent-ready runtimes, Secrets, and multi-factor authentication switch on — the prerequisite tier for AI.</p></div>
+      <div class="step"><h4>Prove Agent Mgmt</h4><p>Stand up <em>one</em> governed agent use case on the 90-day trial. Value is demonstrable, not abstract.</p></div>
+    </div>
+  </section>
+
+  <!-- PART 4: EXEC LANGUAGE + CAVEATS -->
+  <section aria-label="Executive language and caveats">
+    <div class="part-rule">
+      <span class="part-no">PART 4</span>
+      <h2>Executive framing &amp; honest caveats</h2>
+    </div>
+
+    <h3>How to say it at the executive level</h3>
+    <div class="exec">
+      <div class="who">
+        <div class="role">Economic buyer</div>
+        <h4>Lead with risk retired, not features bought</h4>
+        <blockquote>"You're carrying two single points of failure — one database and one person. This migration retires both, and it's the same move that unlocks the AI roadmap your architecture team already specified."</blockquote>
+      </div>
+      <div class="who">
+        <div class="role">Chief Digital Officer</div>
+        <h4>Spend, risk, and roadmap as one story</h4>
+        <blockquote>"You became API-first. Becoming agent-first is the next step — and doing it <em>governed</em> is non-negotiable for a regulated carrier. You can run it on the platform that already carries your transaction traffic."</blockquote>
+      </div>
+    </div>
+
+    <div class="note warn">
+      <div class="lbl">Sequencing — anchor the trial to one use case</div>
+      <p><b>They're early on AI.</b> Anchor Agent Management to <em>one</em> concrete use case for the 90-day trial — a governed underwriting-assistant agent, or a claims-partner MCP toolkit — so the expansion is demonstrable rather than an abstract line item. That protects the renewal and produces the first reference.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>Field CTO briefing · internal enablement</span>
+    <span>Target architecture &amp; Agent Management reference</span>
+  </footer>
+</div>
+
+
+
+
+<div class="mermaidTooltip" style="opacity: 0; position: absolute; text-align: center; max-width: 200px; padding: 2px; font-size: 12px; background: rgb(255, 255, 222); border: 1px solid rgb(51, 51, 51); border-radius: 2px; pointer-events: none; z-index: 100;"></div></body></html>

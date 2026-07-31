@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Governing a GitHub MCP server with Gravitee</title>
+<meta name="description" content="One Gravitee MCP Studio in front of a self-hosted GitHub MCP server: per-tool authorization by identity, a read-only role, per-identity rate limiting, and PII redaction on tool responses — with live proof for every claim.">
+<style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0}img,svg{max-width:100%}body{background:var(--paper);color:var(--ink);font-family:var(--f-body)}</style>
+<style>@page{size:A4 portrait;margin:12mm}@media print{*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}:root{color-scheme:light}section,figure,.cards,.note,.card,.split,.grid,.limits li,pre{break-inside:avoid}a{color:inherit;text-decoration:none}.masthead{border-radius:0}}</style>
+<style>
+  :root{
+    --paper:#F7F9FC; --surface:#FFFFFF; --ink:#141A2E; --muted:#586074;
+    --line:#E5E9F0; --line-strong:#D3DAE6;
+    --accent:#2B54D4; --accent-soft:#E9EEFC; --accent-ink:#1A327F;
+    --good:#0C8E79; --good-soft:#E0F3EE;
+    --warn:#B57813; --warn-soft:#F7EEDB;
+    --risk:#BC463C; --risk-soft:#F8E6E3;
+    --band:#121838; --band-ink:#EAEEFB; --band-muted:#9AA6D0; --band-line:#2A335F;
+    --code-bg:#101728; --code-ink:#DCE3F5; --code-line:#26314F;
+    --shadow:0 1px 2px rgba(18,24,56,.05), 0 14px 30px -20px rgba(18,24,56,.22);
+    --maxw:1080px; --measure:74ch;
+    --f-display:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --f-body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0B111B; --surface:#111925; --ink:#E9EDF5; --muted:#98A2B6;
+      --line:#222F3F; --line-strong:#31424F;
+      --accent:#7290F8; --accent-soft:#18233C; --accent-ink:#BACAFF;
+      --good:#37C9AE; --good-soft:#123028; --warn:#E0A94A; --warn-soft:#2E2510;
+      --risk:#E56A5E; --risk-soft:#331815;
+      --code-bg:#0A1120; --code-ink:#D6DEF2; --code-line:#1E2942;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 20px 42px -24px rgba(0,0,0,.72);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#F7F9FC; --surface:#FFFFFF; --ink:#141A2E; --muted:#586074;
+    --line:#E5E9F0; --line-strong:#D3DAE6;
+    --accent:#2B54D4; --accent-soft:#E9EEFC; --accent-ink:#1A327F;
+    --good:#0C8E79; --good-soft:#E0F3EE; --warn:#B57813; --warn-soft:#F7EEDB;
+    --risk:#BC463C; --risk-soft:#F8E6E3;
+    --code-bg:#101728; --code-ink:#DCE3F5; --code-line:#26314F;
+    --shadow:0 1px 2px rgba(18,24,56,.05), 0 14px 30px -20px rgba(18,24,56,.22);
+  }
+  :root[data-theme="dark"]{
+    --paper:#0B111B; --surface:#111925; --ink:#E9EDF5; --muted:#98A2B6;
+    --line:#222F3F; --line-strong:#31424F;
+    --accent:#7290F8; --accent-soft:#18233C; --accent-ink:#BACAFF;
+    --good:#37C9AE; --good-soft:#123028; --warn:#E0A94A; --warn-soft:#2E2510;
+    --risk:#E56A5E; --risk-soft:#331815;
+    --code-bg:#0A1120; --code-ink:#D6DEF2; --code-line:#1E2942;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 20px 42px -24px rgba(0,0,0,.72);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f-body); font-size:16px; line-height:1.62; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px 96px}
+  .col{max-width:var(--measure)}
+  p{margin:0 0 1rem}
+  strong{font-weight:640}
+  em{font-style:italic}
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--f-mono); font-size:.88em; background:var(--accent-soft); color:var(--accent-ink); padding:1.5px 5px; border-radius:5px; border:1px solid color-mix(in srgb,var(--accent) 16%,transparent)}
+
+  .eyebrow{font-family:var(--f-mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600; display:flex; align-items:center; gap:.6em}
+  .eyebrow::before{content:""; width:22px; height:2px; background:currentColor; border-radius:2px}
+
+  /* ---- masthead ---- */
+  .masthead{background:var(--band); color:var(--band-ink); border-radius:0 0 18px 18px; margin-bottom:40px}
+  .masthead .inner{max-width:var(--maxw); margin:0 auto; padding:54px 24px 40px}
+  .masthead .eyebrow{color:#8FA6FF}
+  .masthead h1{font-family:var(--f-display); font-weight:680; letter-spacing:-.02em; font-size:clamp(28px,4.4vw,44px); line-height:1.06; text-wrap:balance; margin:18px 0 16px; max-width:22ch}
+  .masthead .lede{font-size:clamp(17px,2vw,19px); color:var(--band-muted); max-width:66ch; margin:0}
+  .masthead .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:24px}
+  .masthead .chip{font-family:var(--f-mono); font-size:12.5px; color:var(--band-ink); background:rgba(255,255,255,.06); border:1px solid var(--band-line); padding:6px 12px; border-radius:999px}
+  .masthead .chip b{color:#B9C8FF; font-weight:600}
+  .masthead .byline{margin-top:20px; font-family:var(--f-mono); font-size:12.5px; color:var(--band-muted); display:flex; flex-wrap:wrap; gap:6px 14px}
+  .masthead .byline b{color:var(--band-ink); font-weight:600}
+
+  /* ---- sections ---- */
+  section{padding-top:52px}
+  .part-rule{display:flex; align-items:baseline; gap:16px; margin:0 0 24px; padding-top:8px; border-top:2px solid var(--ink)}
+  .part-no{font-family:var(--f-mono); font-size:13px; color:var(--accent); font-weight:700; letter-spacing:.06em; white-space:nowrap}
+  h2{font-family:var(--f-display); font-weight:660; letter-spacing:-.015em; font-size:clamp(21px,2.7vw,27px); line-height:1.16; margin:0; text-wrap:balance}
+  h3{font-family:var(--f-display); font-weight:640; font-size:17px; margin:32px 0 12px; letter-spacing:-.01em}
+
+  /* ---- thesis ---- */
+  .thesis{background:linear-gradient(180deg,var(--accent-soft),transparent); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:12px; padding:22px 24px; margin:8px 0 6px}
+  .thesis .k{font-family:var(--f-display); font-weight:680; font-size:19px; letter-spacing:-.01em; margin:0 0 6px}
+  .thesis p{margin:0; color:var(--muted); max-width:66ch}
+  .thesis p + p{margin-top:8px}
+
+  /* ---- model cards ---- */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:20px 0 4px}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow)}
+  .card .tag{font-family:var(--f-mono); font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  .card h4{font-family:var(--f-display); font-size:16px; font-weight:640; margin:8px 0 6px}
+  .card p{margin:0; font-size:14.5px; color:var(--muted)}
+  .card p + p{margin-top:8px}
+  .card.deny .tag{color:var(--risk)}
+
+  /* ---- code ---- */
+  pre{margin:16px 0 6px; background:var(--code-bg); color:var(--code-ink); border:1px solid var(--code-line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-family:var(--f-mono); font-size:13px; line-height:1.62; box-shadow:var(--shadow)}
+  pre code{background:none; border:none; padding:0; color:inherit; font-size:inherit}
+  pre .c{color:#8FA0C8}
+  .prelabel{font-family:var(--f-mono); font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:22px 0 -6px}
+
+  /* ---- tables ---- */
+  .tblwrap{overflow-x:auto; margin:14px 0 4px; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow)}
+  table{width:100%; border-collapse:collapse; font-size:14px; background:var(--surface)}
+  thead th{text-align:left; font-family:var(--f-mono); font-size:11.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700; padding:13px 14px; border-bottom:1px solid var(--line-strong); white-space:nowrap}
+  tbody td{padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  td .who{font-weight:640; color:var(--ink); font-family:var(--f-mono); font-size:13px}
+  td .who span{display:block; font-family:var(--f-body); font-size:12px; color:var(--muted); font-weight:500; margin-top:2px}
+
+  /* ---- decision pills ---- */
+  .pill{display:inline-flex; align-items:center; gap:6px; white-space:nowrap; font-family:var(--f-mono); font-size:11.5px; letter-spacing:.03em; font-weight:700; padding:3px 9px; border-radius:999px; border:1px solid transparent}
+  .pill::before{content:""; width:6px; height:6px; border-radius:50%}
+  .pill.permit{color:var(--good); background:var(--good-soft); border-color:color-mix(in srgb,var(--good) 30%,transparent)}
+  .pill.permit::before{background:var(--good)}
+  .pill.forbid{color:var(--risk); background:var(--risk-soft); border-color:color-mix(in srgb,var(--risk) 34%,transparent)}
+  .pill.forbid::before{background:var(--risk)}
+  .pill.deny{color:var(--warn); background:var(--warn-soft); border-color:color-mix(in srgb,var(--warn) 34%,transparent)}
+  .pill.deny::before{background:var(--warn)}
+
+  /* ---- metrics ---- */
+  .metrics{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:22px 0 4px}
+  .metric{background:var(--surface); border:1px solid var(--line); border-top:2px solid var(--accent); border-radius:10px; padding:15px 16px}
+  .metric .v{font-family:var(--f-mono); font-weight:700; font-size:20px; letter-spacing:-.01em; color:var(--ink); font-variant-numeric:tabular-nums}
+  .metric .l{font-size:13px; color:var(--muted); margin-top:5px}
+  .metric.good{border-top-color:var(--good)}
+  .metric.risk{border-top-color:var(--risk)}
+
+  /* ---- notes ---- */
+  .note{border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:22px 0 4px; background:var(--surface)}
+  .note.warn{border-left:3px solid var(--warn); background:linear-gradient(180deg,var(--warn-soft),transparent)}
+  .note.risk{border-left:3px solid var(--risk); background:linear-gradient(180deg,var(--risk-soft),transparent)}
+  .note.good{border-left:3px solid var(--good); background:linear-gradient(180deg,var(--good-soft),transparent)}
+  .note .lbl{font-family:var(--f-mono); font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; margin-bottom:6px}
+  .note.warn .lbl{color:var(--warn)} .note.risk .lbl{color:var(--risk)} .note.good .lbl{color:var(--good)}
+  .note p{margin:0; font-size:14.5px; color:var(--ink); max-width:76ch}
+  .note p + p{margin-top:8px}
+
+  /* ---- limits list ---- */
+  .limits{list-style:none; padding:0; margin:14px 0 4px; display:grid; gap:10px}
+  .limits li{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--warn); border-radius:10px; padding:13px 16px; font-size:14.5px; color:var(--muted)}
+  .limits li b{color:var(--ink); font-weight:640}
+
+  /* ---- closing ---- */
+  .closing{background:var(--band); color:var(--band-ink); border-radius:16px; padding:30px 32px; margin-top:34px}
+  .closing .k{font-family:var(--f-display); font-weight:680; font-size:21px; letter-spacing:-.015em; margin:0 0 10px; max-width:24ch}
+  .closing p{margin:0; color:var(--band-muted); font-size:15px; max-width:70ch}
+  .closing p + p{margin-top:10px}
+  .closing b{color:var(--band-ink); font-weight:600}
+
+  footer{margin-top:64px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; font-family:var(--f-mono); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+
+  @media (max-width:760px){
+    .grid,.metrics{grid-template-columns:1fr}
+    .masthead h1{max-width:none}
+  }
+  @media (prefers-reduced-motion:no-preference){
+    .masthead .inner,section{animation:rise .5s ease both}
+    @keyframes rise{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="inner">
+    <div class="eyebrow">Field note · MCP governance</div>
+    <h1>Governing a GitHub MCP server with Gravitee: what one gateway does that a token can't</h1>
+    <p class="lede">One Gravitee MCP Studio in front of a self-hosted GitHub MCP server, doing four things the GitHub token can't: per-tool authorization by identity, a narrow read-only role, per-identity rate limiting, and PII redaction on tool responses. Real policy, live proof for every claim, and an honest look at where it stops.</p>
+    <div class="chips">
+      <span class="chip"><b>Studio</b> · engineering-toolbelt</span>
+      <span class="chip"><b>Policy</b> · Cedar, default-deny</span>
+      <span class="chip"><b>Proof</b> · captured live, not recalled</span>
+      <span class="chip"><b>Build</b> · Gravitee Gamma (alpha)</span>
+    </div>
+    <div class="byline">
+      <span><b>Cole Howard</b> · Field CTO, GraviteeSource</span>
+      <span>2026-07-30</span>
+      <span><b>Tested on</b> gamma-module-authz 1.2.0 · gamma-module-aim alpha.129</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- PART 1 -->
+  <section aria-label="What you're securing">
+    <div class="part-rule">
+      <span class="part-no">PART 1</span>
+      <h2>What you're securing, and the shape of the fix</h2>
+    </div>
+
+    <div class="col">
+      <p>Take an engineering agent — a developer's Claude Desktop, a Cursor agent, an internal bot — wired to a self-hosted GitHub MCP server. It lists issues, reads files, searches code, reads PRs. It also creates and updates files. The moment you hand that server to a caller, the caller inherits everything the GitHub token behind it can do. Read and write, one credential, no per-caller line between them, no independent record of who did what. That's over-privilege by default, and it's the same shape whether the caller is a person or an agent acting for one.</p>
+    </div>
+
+    <div class="col">
+      <div class="thesis">
+        <p class="k">Make the gateway decide — per tool, per caller, default-deny.</p>
+        <p>I put one Gravitee MCP Studio in front of that server, then added a rate cap and a PII screen on top. This is the policy, the config, and the proof, captured live: a write from a read-only agent dies at the gateway, a runaway agent gets throttled, and a name and email in a file come back redacted before the agent ever sees them. Not a slide.</p>
+      </div>
+    </div>
+
+    <h3>The hole in a token</h3>
+    <div class="col">
+      <p>A GitHub MCP server exposes tools, and tools are not equal. <code>list_issues</code>, <code>get_file_contents</code>, <code>search_code</code> and <code>pull_request_read</code> read. <code>create_or_update_file</code> writes. GitHub's own token doesn't care which caller is asking — a personal access token carries a fixed set of scopes, and every caller behind it gets all of them. No per-caller line, no default-deny, no independent audit. That's the hole: one credential's worth of authority, handed to everyone who reaches the server.</p>
+    </div>
+
+    <h3>The architecture — one studio, one policy model</h3>
+    <div class="grid">
+      <div class="card">
+        <div class="tag">Identity</div>
+        <h4>The caller holds its own identity</h4>
+        <p>An OAuth token from Access Management, mapped to a group — <code>alice</code> → Admin, <code>bob</code> → Engineering, <code>trish</code> → Triage.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Credential</div>
+        <h4>The GitHub credential lives only in the studio</h4>
+        <p>The caller never holds it, and you rotate or revoke it in one place.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Enforcement</div>
+        <h4>Every tool call is an authorization decision</h4>
+        <p>Evaluated at the gateway as a subject (the caller), an action, and a resource that names the specific tool.</p>
+      </div>
+      <div class="card deny">
+        <div class="tag">Default</div>
+        <h4>Default-deny</h4>
+        <p>A tool call with no matching permit is refused. Nothing is allowed by omission.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <p style="margin-top:20px">The studio also curates: in this build it exposes nine tools drawn from several upstream servers behind one endpoint — the GitHub server plus a docs server, a Q&amp;A tool, and a network tool. The agent connects to one vetted, governed endpoint instead of wiring itself to three raw MCP servers with three credentials. Curation is a control in its own right: only the tools you approve, from the servers you approve. <em>Standing up the GitHub MCP server itself — container, token, scopes — is GitHub's own procedure and out of scope here.</em></p>
+    </div>
+  </section>
+
+  <!-- PART 2 -->
+  <section aria-label="Authorizing per tool, per identity">
+    <div class="part-rule">
+      <span class="part-no">PART 2</span>
+      <h2>Authorizing per tool, per identity</h2>
+    </div>
+
+    <div class="col">
+      <p>Policies are Cedar, authored as <code>GLOBAL</code> and deployed to the engine:</p>
+    </div>
+
+<pre><code>POST .../modules/authz/policies   {"name":…, "kind":"GLOBAL", "policyType":"MCP", "policyText":…}
+POST .../modules/authz/policies/{id}/deploy</code></pre>
+
+    <div class="note warn">
+      <div class="lbl">A correction, because getting it wrong once and saying so is more useful than a quiet fix</div>
+      <p>My first instinct was to author this through the console — create an MCP-scoped policy, pick the studio from a list. That list came up empty, even with the studio deployed, its tools present, and a published plan. Verified again live this session. What works is authoring the Cedar directly. Whether the empty picker is an alpha indexing gap or a step I missed is unconfirmed, and worth a code check before it's stated as product behavior.</p>
+    </div>
+
+    <div class="col">
+      <p style="margin-top:22px">The three policies that produce a read-mostly Engineering role, by name from the live decision log:</p>
+    </div>
+
+<pre><code><span class="c">// Engineering may use every tool...</span>
+permit(principal in Group::"&lt;engineering&gt;", action, resource);
+
+<span class="c">// ...except the write, which is forbidden. In Cedar, forbid always beats permit.</span>
+forbid(principal in Group::"&lt;engineering&gt;", action,
+       resource == MCPTool::"github-mcp-server.create_or_update_file");
+
+<span class="c">// Admin gets everything.</span>
+permit(principal in Group::"&lt;admin&gt;", action, resource);</code></pre>
+
+    <h3>Proving the containment, live</h3>
+    <div class="col">
+      <p>I drove the studio as each user and captured the gateway's own decision for every call:</p>
+    </div>
+
+    <div class="tblwrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Caller (group)</th><th>list_issues</th><th>get_file_contents</th><th>search_code</th><th>pull_request_read</th><th>create_or_update_file</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="who">bob<span>Engineering</span></div></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill forbid">FORBID</span></td>
+          </tr>
+          <tr>
+            <td><div class="who">alice<span>Admin</span></div></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill permit">PERMIT</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <p style="margin-top:18px">The same engineering agent, the same server, four reads allowed and the one write refused — and the refusal happens at Gravitee before the call reaches GitHub. The write returned <strong>HTTP 403</strong> with no upstream call made. The two decisions that matter, captured verbatim (identifying UUIDs and the internal timing field trimmed — real, but not public contract, so don't build on the field names):</p>
+    </div>
+
+<pre><code>subject=User::"…bob…"  action=github-mcp-server.list_issues
+  resource=MCPTool::"github-mcp-server.list_issues"
+  decision=PERMIT  reason="Permitted by policy 'engineering-can-use-tools'"
+
+subject=User::"…bob…"  action=github-mcp-server.create_or_update_file
+  resource=MCPTool::"github-mcp-server.create_or_update_file"
+  decision=FORBID  reason="Forbidden by policy 'engineering-forbid-create_or_update_file'"</code></pre>
+
+    <div class="metrics">
+      <div class="metric good">
+        <div class="v">64–206 µs</div>
+        <div class="l">Authorization decision time, measured across the captured calls</div>
+      </div>
+      <div class="metric risk">
+        <div class="v">HTTP 403</div>
+        <div class="l">Returned on the forbidden write — no upstream GitHub call made</div>
+      </div>
+      <div class="metric">
+        <div class="v">3 policies</div>
+        <div class="l">Produce a read-mostly Engineering role and a full Admin role</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <p style="margin-top:20px">That record is the artifact GitHub's own token can't produce: per-caller, per-tool, with the policy that decided it. Governance without a latency tax.</p>
+    </div>
+  </section>
+
+  <!-- PART 3 -->
+  <section aria-label="Narrowing to a triage tier">
+    <div class="part-rule">
+      <span class="part-no">PART 3</span>
+      <h2>Narrowing to a triage tier</h2>
+    </div>
+
+    <div class="col">
+      <p>Read-versus-write is the coarse cut. The finer one is a role that can barely do anything — a triage or support agent that reads issues and searches, and nothing else. One policy, a <code>when</code> clause enumerating exactly the two tools it's allowed:</p>
+    </div>
+
+<pre><code>permit(principal in Group::"&lt;triage&gt;", action, resource)
+when { resource == MCPTool::"github-mcp-server.list_issues"
+    || resource == MCPTool::"github-mcp-server.search_code" };</code></pre>
+
+    <div class="col">
+      <p style="margin-top:18px">Everything without an explicit permit falls through to deny. Live, as <code>trish</code> (Triage):</p>
+    </div>
+
+    <div class="tblwrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Caller</th><th>list_issues</th><th>get_file_contents</th><th>search_code</th><th>pull_request_read</th><th>create_or_update_file</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="who">trish<span>Triage</span></div></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill deny">DENIED</span></td>
+            <td><span class="pill permit">PERMIT</span></td>
+            <td><span class="pill deny">DENIED</span></td>
+            <td><span class="pill deny">DENIED</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <p style="margin-top:18px">Three tiers now — Admin, Engineering, Triage — over one server and one credential, each a difference of policy, not of token.</p>
+    </div>
+
+    <div class="note warn">
+      <div class="lbl">Sync subtlety worth knowing</div>
+      <p>A brand-new identity's group membership is pushed to the decision engine asynchronously, so the very first call after you create the user can miss its permit until the sync settles. Give it a beat.</p>
+    </div>
+  </section>
+
+  <!-- PART 4 -->
+  <section aria-label="Per-identity rate limiting">
+    <div class="part-rule">
+      <span class="part-no">PART 4</span>
+      <h2>Capping the agent — per-identity rate limiting</h2>
+    </div>
+
+    <div class="col">
+      <p>A compromised or looping agent doesn't need a forbidden tool to do damage — it can hammer a permitted one. So cap it. A rate-limit policy on the studio flow, keyed on the caller's identity, gives each identity its own budget:</p>
+    </div>
+
+<pre><code>{ "policy": "rate-limit",
+  "configuration": {
+    "addHeaders": true,
+    "rate": { "limit": 10, "periodTime": 60, "periodTimeUnit": "SECONDS",
+              "key": "{#context.attributes['user']}" } } }</code></pre>
+
+    <div class="col">
+      <p style="margin-top:18px">That <code>key</code> is the whole trick. The MCP flow exposes the caller as <code>{#context.attributes['user']}</code> — the same attribute the authorization policy keys off — so the limit is per identity, not global. Live, <code>bob</code> capped at 10 per 60 seconds:</p>
+    </div>
+
+<pre><code>bob list_issues call  1–10 : allowed   (HTTP 200)
+bob list_issues call 11–13 : throttled (HTTP 429)</code></pre>
+
+    <div class="col">
+      <p style="margin-top:18px">Governance on <em>how much</em>, not just <em>what</em>. One caller hitting the wall doesn't touch anyone else's budget.</p>
+    </div>
+  </section>
+
+  <!-- PART 5 -->
+  <section aria-label="PII redaction on tool responses">
+    <div class="part-rule">
+      <span class="part-no">PART 5</span>
+      <h2>Redacting what comes back — PII on tool responses</h2>
+    </div>
+
+    <div class="col">
+      <p>Authorization decides whether a read is allowed. It says nothing about what the read <em>returns</em>. <code>get_file_contents</code> on the wrong file hands an agent — and the LLM behind it — a name, an email, a phone number. So screen the response. This needs two pieces: a token-classification model resource, and a filtering policy that uses it.</p>
+    </div>
+
+<pre><code><span class="c">// resource: an on-gateway PII model</span>
+{ "name": "pii-model", "type": "ai-model-token-classification",
+  "configuration": { "model": { "type": "GRAVITEE_BERT_SMALL_PII_DETECTION" } } }
+
+<span class="c">// policy: scan responses, redact the matched categories</span>
+{ "policy": "pii-filtering",
+  "configuration": {
+    "resourceName": "pii-model",
+    "categories": ["PERSON","EMAIL","PHONE","FINANCIAL_ACCOUNT","GOVERNMENT_ID","LOCATION"],
+    "threshold": 0.5,
+    "skipResponsePayloadFiltering": false } }</code></pre>
+
+    <div class="col">
+      <p style="margin-top:18px">I proved it against a real file. <code>contact.txt</code> on a branch of the demo repo really contains <code>Jane Smith</code>, <code>jane.smith@example.com</code>, <code>+1-415-555-0142</code>. Read through the governed studio, here's what the agent actually receives:</p>
+    </div>
+
+<pre><code>Customer: [REDACTED]
+Email:    [REDACTED]
+Phone:    [REDACTED]
+Notes: follow up on the double-charge dispute.</code></pre>
+
+    <div class="col">
+      <p style="margin-top:18px">Name, email and phone masked. The non-PII line — the dispute note — passed through untouched. The model runs <strong>inside the gateway</strong>, so no payload leaves the boundary just to be classified.</p>
+    </div>
+
+    <div class="note risk">
+      <div class="lbl">One honest catch — found by trying, not by reading</div>
+      <p>The PII model is CPU-bound and runs per response. When I flooded the studio with rapid calls to test the rate limit, the gateway started throwing <code>VertxException: Thread blocked</code> and returning 502s — the model was blocking the event loop under the flood. At normal request rates it's fine, and a paced call stream returns clean.</p>
+      <p>But size it for your traffic, and treat "PII-screen every response, at any concurrency" as a thing to load-test, not assume. It's a real reason to want the inference off the request thread, and worth raising with the AIM team.</p>
+    </div>
+  </section>
+
+  <!-- PART 6 -->
+  <section aria-label="Boundaries and limits">
+    <div class="part-rule">
+      <span class="part-no">PART 6</span>
+      <h2>Boundaries — GitHub's own controls, and where this stops</h2>
+    </div>
+
+    <h3>Why not just use GitHub's own controls</h3>
+    <div class="col">
+      <p>Fair question — GitHub gives you knobs. Be precise about where they reach. <strong>PAT scopes</strong> limit what the <em>token</em> can do, but per token, not per caller — every caller behind that token shares the same authority. The MCP server's <strong>read-only mode</strong> is server-wide, all-or-nothing for everyone connected. Neither gives you a <strong>single, default-deny policy</strong> authored once, evaluated per calling identity, per tool, with an <strong>independent decision record</strong> the GitHub side never produces — let alone a per-identity rate cap or a PII screen on what comes back. That's the gap the studio fills.</p>
+      <p style="font-size:14px; color:var(--muted)"><em>The GitHub-side controls here are third-party context — set them tightly, but they're a different layer.</em></p>
+    </div>
+
+    <h3>Where it stops today</h3>
+    <ul class="limits">
+      <li><b>Authorization is tool-level, not argument-level.</b> I wanted "permit writes to a <code>sandbox</code> repo, forbid <code>production</code>," and it can't be expressed here. I probed it live: the enforcement point passes only the tool <em>name</em> to the policy, never its arguments — a forbid conditioned on any of <code>repo</code>/<code>branch</code>/<code>owner</code>/<code>path</code> in the policy context never triggered, and the Cedar schema is empty. Tool-level is the real, working boundary. Argument-level would need the engine to pass tool arguments to the policy — a roadmap ask.</li>
+      <li><b>PII filtering blocks under a flood</b> (above). Suited to normal request rates.</li>
+      <li><b>LLM proxies don't expose the same fine-grained-authorization toggle</b> that MCP studios do in this build — an LLM proxy needs the enforcement added by hand.</li>
+      <li><b>The <code>aim</code> module is alpha</b> (<code>alpha.129</code>). Behavior can move between builds.</li>
+    </ul>
+
+    <div class="closing">
+      <p class="k">The pattern, not just GitHub.</p>
+      <p>Nothing in any of this is GitHub-specific. The gateway decides <b>per subject, per tool, default-deny</b>; caps <b>per identity</b>; and <b>screens what comes back</b> — on <em>any</em> MCP server it fronts. Swap the server, keep the model: one governed endpoint, one Cedar policy set, one rate cap, one PII screen, per-caller authority the underlying credential can't express on its own.</p>
+      <p><b>GitHub is the first box. The box is replaceable.</b></p>
+      <p>If you're fronting an MCP server for agents and want to compare notes on the policy shape, get in touch.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>Cole Howard · Field CTO, GraviteeSource · 2026-07-30</span>
+    <span>Verified live · Gravitee Gamma local stack</span>
+  </footer>
+</div>
+
+</body></html>

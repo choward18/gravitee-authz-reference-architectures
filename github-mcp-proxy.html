@@ -261,14 +261,14 @@
     </div>
 
     <div class="col">
-      <p>Policy is written in <a href="https://www.cedarpolicy.com/" rel="noopener">Cedar</a>, so the rules are readable by the people who have to sign off on them. A read-mostly Engineering role takes two statements — a broad permit, and a targeted forbid on the one tool that writes:</p>
+      <p>Policy is written in <strong>GAPL</strong> — the Gravitee Authorization Policy Language, a subset of Cedar — so the rules stay readable by the people who have to sign off on them. A read-mostly Engineering role takes two statements: a broad permit, and a targeted forbid on the one tool that writes.</p>
     </div>
 
 <pre><code><span class="c">// Engineering may use every tool...</span>
 permit(principal in Group::"engineering", action, resource);
 
 <span class="c">// ...except the write, which is forbidden.</span>
-<span class="c">// In Cedar, forbid always beats permit.</span>
+<span class="c">// In GAPL, forbid always beats permit.</span>
 forbid(principal in Group::"engineering", action,
        resource == MCPTool::"github-mcp-server.create_or_update_file");</code></pre>
 
@@ -311,23 +311,23 @@ forbid(principal in Group::"engineering", action,
 
     <h3>The audit trail is the second deliverable</h3>
     <div class="col">
-      <p>Enforcement is the obvious win. The decision record is the one that matters to your auditor, because every call leaves a line naming the caller, the tool, the outcome, and <em>the policy that decided it</em>:</p>
+      <p>Enforcement is the obvious win. The decision record is the one that matters to your auditor. Every tool call — permitted or refused — records the calling identity, the tool, the decision, the policy that determined it, and how long the evaluation took.</p>
+      <p>That last field is the one people underestimate. "Access denied" tells an investigator nothing; <em>"denied, by this named policy"</em> tells them whether the control worked as designed or whether someone needs to fix a rule. And a permit is recorded just as fully as a refusal, so the trail answers "what did this agent actually do" and not merely "what did we stop."</p>
     </div>
 
-<pre><code>subject=User::"…bob…"  action=github-mcp-server.list_issues
-  decision=PERMIT  reason="Permitted by policy 'engineering-can-use-tools'"
-
-subject=User::"…bob…"  action=github-mcp-server.create_or_update_file
-  decision=FORBID  reason="Forbidden by policy 'engineering-forbid-create_or_update_file'"</code></pre>
+    <div class="note accent">
+      <div class="lbl">Two ways to be refused, and the difference is worth logging</div>
+      <p>A call can be turned away because a policy <b>explicitly forbade it</b>, or because <b>nothing permitted it</b> and default-deny caught it. Both refuse the caller identically. Only the first names a policy in the record — the second tells you the tool was never granted to anyone in that role, which is a different conversation with a different fix.</p>
+    </div>
 
     <div class="col">
-      <p style="margin-top:18px">A shared token cannot produce that record, because at the moment of the call there is no per-caller identity left to write down. This is the difference between "the agent had access" and "here is who asked, for what, and why the platform said yes."</p>
+      <p style="margin-top:22px">A shared token cannot produce any of that, because at the moment of the call there is no per-caller identity left to write down. This is the difference between "the agent had access" and "here is who asked, for what, and why the platform said yes."</p>
     </div>
 
     <div class="metrics">
       <div class="metric good">
         <div class="v">Microseconds</div>
-        <div class="l">Decision time in a working setup — the engine runs inside the gateway, so there is no network hop to a remote policy service</div>
+        <div class="l">Decision time in the setup tested here, where the policy engine runs in-process in the gateway — no network hop to a remote decision service</div>
       </div>
       <div class="metric">
         <div class="v">403, no upstream call</div>
@@ -395,6 +395,7 @@ when { resource == MCPTool::"github-mcp-server.list_issues"
     <div class="col">
       <p>Here is the failure mode authorization alone will not catch: a compromised or looping agent doesn't need a forbidden tool to cause damage. It can hammer a perfectly permitted one. Agents retry. Agents loop. An agent that decides to search your codebase four thousand times is behaving entirely within policy.</p>
       <p>So cap it. A rate limit on the studio flow, keyed on <strong>the caller's identity</strong> rather than on the connection or the source address, gives every identity its own budget:</p>
+      <p style="font-size:14px; color:var(--muted)">The key is the part worth getting right. Left at its default, the counter follows the subscription — which is fine until several identities share one. Pointing it at the caller is a deliberate configuration choice, not something you inherit.</p>
     </div>
 
 <pre><code>bob → list_issues, calls  1–10 : allowed   (200)
@@ -402,6 +403,34 @@ bob → list_issues, calls 11–13 : throttled (429)</code></pre>
 
     <div class="col">
       <p style="margin-top:18px">Keying on identity is the whole trick. A global limit protects the upstream server but lets one runaway agent consume everyone's headroom. A per-identity limit contains the blast radius to the caller causing it — one agent hitting the wall doesn't touch anyone else's budget, and the identity in the throttling record tells you immediately which agent to go look at.</p>
+    </div>
+
+    <h3>A cap is not the only shape</h3>
+    <div class="col">
+      <p>A short-window rate limit answers "how fast", and it is the right first control. But it is one of three, and reaching for it when you needed one of the others is a common way to end up with a limit that annoys everyone and protects nothing.</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="tag">How fast</div>
+        <h4>Rate limit</h4>
+        <p>A ceiling over a short window — seconds or minutes. The control in this walkthrough, and the one that catches a looping agent quickly.</p>
+      </div>
+      <div class="card">
+        <div class="tag">How much, over time</div>
+        <h4>Quota</h4>
+        <p>An allowance over hours, days or months. The right shape when the concern is total consumption or cost rather than instantaneous pressure.</p>
+      </div>
+      <div class="card">
+        <div class="tag">How bursty</div>
+        <h4>Spike arrest</h4>
+        <p>Smooths bursts rather than refusing them outright — useful when an agent's traffic is legitimately spiky and you care about protecting the upstream.</p>
+      </div>
+      <div class="card deny">
+        <div class="tag">Check availability</div>
+        <h4>Not everything applies everywhere</h4>
+        <p>Policies declare which traffic types they support, and the burst-friendly token-bucket variant does not currently list MCP among them. Confirm a policy applies to MCP before you design around it.</p>
+      </div>
     </div>
   </section>
 
@@ -436,22 +465,22 @@ Notes: follow up on the double-charge dispute.</code></pre>
   <section aria-label="Why platform controls are not enough">
     <div class="part-rule">
       <span class="part-no">PART 7</span>
-      <h2>Why the platform's own controls don't close this</h2>
+      <h2>Why upstream settings alone don't close this</h2>
     </div>
 
     <div class="col">
-      <p>It's a fair question — source control platforms do give you knobs. It's worth being precise about how far they reach, because they are genuinely useful and genuinely not sufficient.</p>
+      <p>It's a fair question — most systems you'd put behind MCP have their own permission settings, and you should absolutely use them. It's worth being precise about how far they reach, because they are genuinely useful and structurally unable to do this particular job.</p>
     </div>
 
     <ul class="takeaways">
-      <li><b>Token scopes limit the token, not the caller.</b> Every caller behind that token shares its authority. Scopes are a ceiling on the credential; they can't distinguish your triage agent from your admin.</li>
-      <li><b>Server-wide read-only mode is all-or-nothing.</b> It applies to everyone connected. You either lose write for the agents that legitimately need it, or keep it for the agents that shouldn't have it.</li>
-      <li><b>Neither produces an independent decision record.</b> There is no per-caller, per-tool audit trail naming the policy that decided the call, because there is no per-caller identity at that point in the chain.</li>
-      <li><b>Neither has any concept of a per-identity rate cap or a redaction screen.</b> These are properties of the call path, not of the credential — so they can only be enforced by something sitting on that path.</li>
+      <li><b>A credential's permissions bound the credential, not the caller.</b> Every caller behind it shares whatever it was granted. That's a ceiling on the token; it can't distinguish a triage agent from an admin, because by the time the call arrives they are the same token.</li>
+      <li><b>Server-level switches apply to everyone connected.</b> A setting that makes a server read-only is all-or-nothing. You either withdraw an operation from the agents that legitimately need it, or leave it available to the agents that shouldn't have it.</li>
+      <li><b>Neither produces an independent decision record.</b> There is no per-caller, per-tool trail naming the policy that decided the call — because at that point in the chain there is no per-caller identity left to record.</li>
+      <li><b>Neither has any concept of a per-identity cap or a redaction screen.</b> These are properties of the call path, not of the credential, so only something sitting on that path can enforce them.</li>
     </ul>
 
     <div class="col">
-      <p style="margin-top:20px">The practical answer is both, not either. Set the platform-side controls tightly — that's your ceiling. Then let the gateway express the per-caller authority the credential was never able to describe.</p>
+      <p style="margin-top:20px">The practical answer is both, not either. Set the upstream permissions as tightly as the work allows — that's your ceiling, and it should be a low one. Then let the gateway express the per-caller authority no shared credential was ever able to describe.</p>
     </div>
   </section>
 

@@ -2,10 +2,10 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Governing a GitHub MCP server with Gravitee</title>
-<meta name="description" content="One Gravitee MCP Studio in front of a self-hosted GitHub MCP server: per-tool authorization by identity, a read-only role, per-identity rate limiting, and PII redaction on tool responses — with live proof for every claim.">
+<title>What a gateway does that a token can't — governing MCP servers with Gravitee</title>
+<meta name="description" content="Handing an agent an MCP server means handing it every permission the credential behind it holds. A worked example of putting a governed MCP endpoint in front: per-tool authorization by identity, per-identity rate limits, and PII redaction on tool responses.">
 <style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0}img,svg{max-width:100%}body{background:var(--paper);color:var(--ink);font-family:var(--f-body)}</style>
-<style>@page{size:A4 portrait;margin:12mm}@media print{*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}:root{color-scheme:light}section,figure,.cards,.note,.card,.split,.grid,.limits li,pre{break-inside:avoid}a{color:inherit;text-decoration:none}.masthead{border-radius:0}}</style>
+<style>@page{size:A4 portrait;margin:12mm}@media print{*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}:root{color-scheme:light}section,figure,.cards,.note,.card,.split,.grid,pre{break-inside:avoid}a{color:inherit;text-decoration:none}.masthead{border-radius:0}}</style>
 <style>
   :root{
     --paper:#F7F9FC; --surface:#FFFFFF; --ink:#141A2E; --muted:#586074;
@@ -105,7 +105,6 @@
   pre{margin:16px 0 6px; background:var(--code-bg); color:var(--code-ink); border:1px solid var(--code-line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-family:var(--f-mono); font-size:13px; line-height:1.62; box-shadow:var(--shadow)}
   pre code{background:none; border:none; padding:0; color:inherit; font-size:inherit}
   pre .c{color:#8FA0C8}
-  .prelabel{font-family:var(--f-mono); font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:22px 0 -6px}
 
   /* ---- tables ---- */
   .tblwrap{overflow-x:auto; margin:14px 0 4px; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow)}
@@ -129,29 +128,27 @@
   /* ---- metrics ---- */
   .metrics{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:22px 0 4px}
   .metric{background:var(--surface); border:1px solid var(--line); border-top:2px solid var(--accent); border-radius:10px; padding:15px 16px}
-  .metric .v{font-family:var(--f-mono); font-weight:700; font-size:20px; letter-spacing:-.01em; color:var(--ink); font-variant-numeric:tabular-nums}
+  .metric .v{font-family:var(--f-mono); font-weight:700; font-size:19px; letter-spacing:-.01em; color:var(--ink); font-variant-numeric:tabular-nums}
   .metric .l{font-size:13px; color:var(--muted); margin-top:5px}
   .metric.good{border-top-color:var(--good)}
-  .metric.risk{border-top-color:var(--risk)}
 
   /* ---- notes ---- */
   .note{border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:22px 0 4px; background:var(--surface)}
-  .note.warn{border-left:3px solid var(--warn); background:linear-gradient(180deg,var(--warn-soft),transparent)}
-  .note.risk{border-left:3px solid var(--risk); background:linear-gradient(180deg,var(--risk-soft),transparent)}
   .note.good{border-left:3px solid var(--good); background:linear-gradient(180deg,var(--good-soft),transparent)}
+  .note.accent{border-left:3px solid var(--accent); background:linear-gradient(180deg,var(--accent-soft),transparent)}
   .note .lbl{font-family:var(--f-mono); font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; margin-bottom:6px}
-  .note.warn .lbl{color:var(--warn)} .note.risk .lbl{color:var(--risk)} .note.good .lbl{color:var(--good)}
+  .note.good .lbl{color:var(--good)} .note.accent .lbl{color:var(--accent)}
   .note p{margin:0; font-size:14.5px; color:var(--ink); max-width:76ch}
   .note p + p{margin-top:8px}
 
-  /* ---- limits list ---- */
-  .limits{list-style:none; padding:0; margin:14px 0 4px; display:grid; gap:10px}
-  .limits li{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--warn); border-radius:10px; padding:13px 16px; font-size:14.5px; color:var(--muted)}
-  .limits li b{color:var(--ink); font-weight:640}
+  /* ---- takeaways ---- */
+  .takeaways{list-style:none; padding:0; margin:14px 0 4px; display:grid; gap:10px}
+  .takeaways li{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px; padding:13px 16px; font-size:14.5px; color:var(--muted)}
+  .takeaways li b{color:var(--ink); font-weight:640}
 
   /* ---- closing ---- */
   .closing{background:var(--band); color:var(--band-ink); border-radius:16px; padding:30px 32px; margin-top:34px}
-  .closing .k{font-family:var(--f-display); font-weight:680; font-size:21px; letter-spacing:-.015em; margin:0 0 10px; max-width:24ch}
+  .closing .k{font-family:var(--f-display); font-weight:680; font-size:21px; letter-spacing:-.015em; margin:0 0 10px; max-width:26ch}
   .closing p{margin:0; color:var(--band-muted); font-size:15px; max-width:70ch}
   .closing p + p{margin-top:10px}
   .closing b{color:var(--band-ink); font-weight:600}
@@ -172,19 +169,16 @@
 
 <div class="masthead">
   <div class="inner">
-    <div class="eyebrow">Field note · MCP governance</div>
-    <h1>Governing a GitHub MCP server with Gravitee: what one gateway does that a token can't</h1>
-    <p class="lede">One Gravitee MCP Studio in front of a self-hosted GitHub MCP server, doing four things the GitHub token can't: per-tool authorization by identity, a narrow read-only role, per-identity rate limiting, and PII redaction on tool responses. Real policy, live proof for every claim, and an honest look at where it stops.</p>
+    <div class="eyebrow">Agentic AI · MCP governance</div>
+    <h1>What a gateway does that a token can't</h1>
+    <p class="lede">The moment you hand an agent an MCP server, you hand it every permission the credential behind that server holds. A worked example of closing that gap: per-tool authorization by identity, roles that are a matter of policy rather than credentials, per-identity rate limits, and PII redaction on what tools return.</p>
     <div class="chips">
-      <span class="chip"><b>Studio</b> · engineering-toolbelt</span>
-      <span class="chip"><b>Policy</b> · Cedar, default-deny</span>
-      <span class="chip"><b>Proof</b> · captured live, not recalled</span>
-      <span class="chip"><b>Build</b> · Gravitee Gamma (alpha)</span>
+      <span class="chip"><b>Topic</b> · MCP &amp; agent governance</span>
+      <span class="chip"><b>Model</b> · default-deny, per tool</span>
+      <span class="chip"><b>Audience</b> · platform &amp; security teams</span>
     </div>
     <div class="byline">
-      <span><b>Cole Howard</b> · Field CTO, GraviteeSource</span>
-      <span>2026-07-30</span>
-      <span><b>Tested on</b> gamma-module-authz 1.2.0 · gamma-module-aim alpha.129</span>
+      <span>By <b>Cole Howard</b> · Field CTO, GraviteeSource</span>
     </div>
   </div>
 </div>
@@ -192,88 +186,95 @@
 <div class="wrap">
 
   <!-- PART 1 -->
-  <section aria-label="What you're securing">
+  <section aria-label="The problem">
     <div class="part-rule">
       <span class="part-no">PART 1</span>
-      <h2>What you're securing, and the shape of the fix</h2>
+      <h2>Over-privilege is the default, not the exception</h2>
     </div>
 
     <div class="col">
-      <p>Take an engineering agent — a developer's Claude Desktop, a Cursor agent, an internal bot — wired to a self-hosted GitHub MCP server. It lists issues, reads files, searches code, reads PRs. It also creates and updates files. The moment you hand that server to a caller, the caller inherits everything the GitHub token behind it can do. Read and write, one credential, no per-caller line between them, no independent record of who did what. That's over-privilege by default, and it's the same shape whether the caller is a person or an agent acting for one.</p>
+      <p>Picture an engineering agent — a developer's desktop assistant, a coding agent in the IDE, an internal bot — wired to a self-hosted MCP server for your source control platform. It lists issues, reads files, searches code, reads pull requests. It also creates and updates files.</p>
+      <p>The moment you hand that server to a caller, the caller inherits everything the credential behind it can do. Read and write, one token, no line between them, and no independent record of who did what. That is over-privilege by default — and it has the same shape whether the caller is a person or an agent acting on their behalf.</p>
+      <p>This is not a source-control problem. It is the shape of <em>every</em> MCP server you put in front of an agent, and it is the reason "we gave the agent an MCP server" and "we govern what the agent can do" are two very different sentences.</p>
     </div>
 
     <div class="col">
       <div class="thesis">
-        <p class="k">Make the gateway decide — per tool, per caller, default-deny.</p>
-        <p>I put one Gravitee MCP Studio in front of that server, then added a rate cap and a PII screen on top. This is the policy, the config, and the proof, captured live: a write from a read-only agent dies at the gateway, a runaway agent gets throttled, and a name and email in a file come back redacted before the agent ever sees them. Not a slide.</p>
+        <p class="k">The fix is to move the decision.</p>
+        <p>Stop asking the credential to express authority it was never designed to express, and let the gateway decide instead — per tool, per caller, default-deny. Then add the two controls a token has no concept of at all: a cap on <em>how much</em> a caller can do, and a screen on <em>what comes back</em>.</p>
       </div>
     </div>
 
-    <h3>The hole in a token</h3>
+    <h3>Tools are not equal, but a token can't tell them apart</h3>
     <div class="col">
-      <p>A GitHub MCP server exposes tools, and tools are not equal. <code>list_issues</code>, <code>get_file_contents</code>, <code>search_code</code> and <code>pull_request_read</code> read. <code>create_or_update_file</code> writes. GitHub's own token doesn't care which caller is asking — a personal access token carries a fixed set of scopes, and every caller behind it gets all of them. No per-caller line, no default-deny, no independent audit. That's the hole: one credential's worth of authority, handed to everyone who reaches the server.</p>
-    </div>
-
-    <h3>The architecture — one studio, one policy model</h3>
-    <div class="grid">
-      <div class="card">
-        <div class="tag">Identity</div>
-        <h4>The caller holds its own identity</h4>
-        <p>An OAuth token from Access Management, mapped to a group — <code>alice</code> → Admin, <code>bob</code> → Engineering, <code>trish</code> → Triage.</p>
-      </div>
-      <div class="card">
-        <div class="tag">Credential</div>
-        <h4>The GitHub credential lives only in the studio</h4>
-        <p>The caller never holds it, and you rotate or revoke it in one place.</p>
-      </div>
-      <div class="card">
-        <div class="tag">Enforcement</div>
-        <h4>Every tool call is an authorization decision</h4>
-        <p>Evaluated at the gateway as a subject (the caller), an action, and a resource that names the specific tool.</p>
-      </div>
-      <div class="card deny">
-        <div class="tag">Default</div>
-        <h4>Default-deny</h4>
-        <p>A tool call with no matching permit is refused. Nothing is allowed by omission.</p>
-      </div>
-    </div>
-
-    <div class="col">
-      <p style="margin-top:20px">The studio also curates: in this build it exposes nine tools drawn from several upstream servers behind one endpoint — the GitHub server plus a docs server, a Q&amp;A tool, and a network tool. The agent connects to one vetted, governed endpoint instead of wiring itself to three raw MCP servers with three credentials. Curation is a control in its own right: only the tools you approve, from the servers you approve. <em>Standing up the GitHub MCP server itself — container, token, scopes — is GitHub's own procedure and out of scope here.</em></p>
+      <p>An MCP server exposes tools, and those tools carry wildly different risk. Listing issues, reading a file, searching code and reading a pull request are all reads. Creating or updating a file is a write that lands in your repository.</p>
+      <p>A personal access token doesn't care which caller is asking. It carries a fixed set of scopes, and every caller behind it gets all of them. No per-caller distinction, no default-deny, no independent audit trail. That is the hole: one credential's worth of authority, handed to everyone who reaches the server.</p>
     </div>
   </section>
 
   <!-- PART 2 -->
-  <section aria-label="Authorizing per tool, per identity">
+  <section aria-label="The architecture">
     <div class="part-rule">
       <span class="part-no">PART 2</span>
-      <h2>Authorizing per tool, per identity</h2>
+      <h2>One governed endpoint, one policy model</h2>
     </div>
 
     <div class="col">
-      <p>Policies are Cedar, authored as <code>GLOBAL</code> and deployed to the engine:</p>
+      <p>Putting a Gravitee MCP Studio in front of the server changes four things at once. None of them require the upstream MCP server to learn anything new.</p>
     </div>
 
-<pre><code>POST .../modules/authz/policies   {"name":…, "kind":"GLOBAL", "policyType":"MCP", "policyText":…}
-POST .../modules/authz/policies/{id}/deploy</code></pre>
+    <div class="grid">
+      <div class="card">
+        <div class="tag">Identity</div>
+        <h4>The caller brings its own identity</h4>
+        <p>Each caller authenticates as itself and maps to a group — Admin, Engineering, Triage. The agent is no longer anonymous behind a shared secret.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Credential</div>
+        <h4>The upstream credential never leaves the gateway</h4>
+        <p>Callers never hold it, so it can't leak from a config file on a laptop — and you rotate or revoke it in exactly one place.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Enforcement</div>
+        <h4>Every tool call is an authorization decision</h4>
+        <p>Evaluated as a subject (the caller), an action, and a resource that names the specific tool being invoked.</p>
+      </div>
+      <div class="card deny">
+        <div class="tag">Default</div>
+        <h4>Default-deny</h4>
+        <p>A tool call with no matching permit is refused. Nothing is allowed by omission — the safest possible failure mode.</p>
+      </div>
+    </div>
+
+    <h3>Curation is a control, not a convenience</h3>
+    <div class="col">
+      <p>A studio also composes. Rather than wiring an agent to three raw MCP servers with three credentials, you expose one vetted endpoint carrying only the tools you approve, drawn from only the servers you approve — source control alongside a documentation server, an internal knowledge tool, whatever the job actually needs.</p>
+      <p>That curation is a security control in its own right. The tools you never expose are tools no policy has to defend against, and the agent's blast radius shrinks before authorization is even consulted.</p>
+    </div>
+  </section>
+
+  <!-- PART 3 -->
+  <section aria-label="Authorization per tool per identity">
+    <div class="part-rule">
+      <span class="part-no">PART 3</span>
+      <h2>Authorization per tool, per identity</h2>
+    </div>
 
     <div class="col">
-      <p style="margin-top:22px">The three policies that produce a read-mostly Engineering role, by name from the live decision log:</p>
+      <p>Policy is written in <a href="https://www.cedarpolicy.com/" rel="noopener">Cedar</a>, so the rules are readable by the people who have to sign off on them. A read-mostly Engineering role takes two statements — a broad permit, and a targeted forbid on the one tool that writes:</p>
     </div>
 
 <pre><code><span class="c">// Engineering may use every tool...</span>
-permit(principal in Group::"&lt;engineering&gt;", action, resource);
+permit(principal in Group::"engineering", action, resource);
 
-<span class="c">// ...except the write, which is forbidden. In Cedar, forbid always beats permit.</span>
-forbid(principal in Group::"&lt;engineering&gt;", action,
-       resource == MCPTool::"github-mcp-server.create_or_update_file");
+<span class="c">// ...except the write, which is forbidden.</span>
+<span class="c">// In Cedar, forbid always beats permit.</span>
+forbid(principal in Group::"engineering", action,
+       resource == MCPTool::"github-mcp-server.create_or_update_file");</code></pre>
 
-<span class="c">// Admin gets everything.</span>
-permit(principal in Group::"&lt;admin&gt;", action, resource);</code></pre>
-
-    <h3>Proving the containment, live</h3>
     <div class="col">
-      <p>I drove the studio as each user and captured the gateway's own decision for every call:</p>
+      <p style="margin-top:18px">That last line is worth sitting with. <strong>Forbid always beats permit</strong>, so a broad grant can never accidentally re-open a tool you have explicitly closed — no matter how many policies get added later, or by whom. That property is what makes a policy set safe to grow.</p>
+      <p>The result, driving the same studio as two different callers:</p>
     </div>
 
     <div class="tblwrap">
@@ -305,54 +306,57 @@ permit(principal in Group::"&lt;admin&gt;", action, resource);</code></pre>
     </div>
 
     <div class="col">
-      <p style="margin-top:18px">The same engineering agent, the same server, four reads allowed and the one write refused — and the refusal happens at Gravitee before the call reaches GitHub. The write returned <strong>HTTP 403</strong> with no upstream call made. The two decisions that matter, captured verbatim (identifying UUIDs and the internal timing field trimmed — real, but not public contract, so don't build on the field names):</p>
+      <p style="margin-top:18px">Same agent, same server, same upstream credential. Four reads allowed, one write refused — and the refusal happens at the gateway, before the call ever reaches the upstream server. The write comes back <strong>403</strong> with no upstream call made at all.</p>
+    </div>
+
+    <h3>The audit trail is the second deliverable</h3>
+    <div class="col">
+      <p>Enforcement is the obvious win. The decision record is the one that matters to your auditor, because every call leaves a line naming the caller, the tool, the outcome, and <em>the policy that decided it</em>:</p>
     </div>
 
 <pre><code>subject=User::"…bob…"  action=github-mcp-server.list_issues
-  resource=MCPTool::"github-mcp-server.list_issues"
   decision=PERMIT  reason="Permitted by policy 'engineering-can-use-tools'"
 
 subject=User::"…bob…"  action=github-mcp-server.create_or_update_file
-  resource=MCPTool::"github-mcp-server.create_or_update_file"
   decision=FORBID  reason="Forbidden by policy 'engineering-forbid-create_or_update_file'"</code></pre>
+
+    <div class="col">
+      <p style="margin-top:18px">A shared token cannot produce that record, because at the moment of the call there is no per-caller identity left to write down. This is the difference between "the agent had access" and "here is who asked, for what, and why the platform said yes."</p>
+    </div>
 
     <div class="metrics">
       <div class="metric good">
-        <div class="v">64–206 µs</div>
-        <div class="l">Authorization decision time, measured across the captured calls</div>
-      </div>
-      <div class="metric risk">
-        <div class="v">HTTP 403</div>
-        <div class="l">Returned on the forbidden write — no upstream GitHub call made</div>
+        <div class="v">Microseconds</div>
+        <div class="l">Decision time in a working setup — the engine runs inside the gateway, so there is no network hop to a remote policy service</div>
       </div>
       <div class="metric">
-        <div class="v">3 policies</div>
-        <div class="l">Produce a read-mostly Engineering role and a full Admin role</div>
+        <div class="v">403, no upstream call</div>
+        <div class="l">A forbidden tool call is stopped at the gateway rather than cleaned up afterwards</div>
       </div>
-    </div>
-
-    <div class="col">
-      <p style="margin-top:20px">That record is the artifact GitHub's own token can't produce: per-caller, per-tool, with the policy that decided it. Governance without a latency tax.</p>
+      <div class="metric">
+        <div class="v">2 statements</div>
+        <div class="l">All it takes to turn a fully-privileged role into a read-mostly one</div>
+      </div>
     </div>
   </section>
 
-  <!-- PART 3 -->
-  <section aria-label="Narrowing to a triage tier">
+  <!-- PART 4 -->
+  <section aria-label="Roles as policy">
     <div class="part-rule">
-      <span class="part-no">PART 3</span>
-      <h2>Narrowing to a triage tier</h2>
+      <span class="part-no">PART 4</span>
+      <h2>Roles become a matter of policy, not credentials</h2>
     </div>
 
     <div class="col">
-      <p>Read-versus-write is the coarse cut. The finer one is a role that can barely do anything — a triage or support agent that reads issues and searches, and nothing else. One policy, a <code>when</code> clause enumerating exactly the two tools it's allowed:</p>
+      <p>Read-versus-write is the coarse cut. The valuable one is narrower: a triage or support agent that reads issues and searches code, and can do nothing else at all. One statement enumerates exactly what it may touch:</p>
     </div>
 
-<pre><code>permit(principal in Group::"&lt;triage&gt;", action, resource)
+<pre><code>permit(principal in Group::"triage", action, resource)
 when { resource == MCPTool::"github-mcp-server.list_issues"
     || resource == MCPTool::"github-mcp-server.search_code" };</code></pre>
 
     <div class="col">
-      <p style="margin-top:18px">Everything without an explicit permit falls through to deny. Live, as <code>trish</code> (Triage):</p>
+      <p style="margin-top:18px">Everything without an explicit permit falls through to deny — so this role is defined by what it <em>can</em> do, and the list is two items long:</p>
     </div>
 
     <div class="tblwrap">
@@ -375,70 +379,42 @@ when { resource == MCPTool::"github-mcp-server.list_issues"
       </table>
     </div>
 
-    <div class="col">
-      <p style="margin-top:18px">Three tiers now — Admin, Engineering, Triage — over one server and one credential, each a difference of policy, not of token.</p>
-    </div>
-
-    <div class="note warn">
-      <div class="lbl">Sync subtlety worth knowing</div>
-      <p>A brand-new identity's group membership is pushed to the decision engine asynchronously, so the very first call after you create the user can miss its permit until the sync settles. Give it a beat.</p>
-    </div>
-  </section>
-
-  <!-- PART 4 -->
-  <section aria-label="Per-identity rate limiting">
-    <div class="part-rule">
-      <span class="part-no">PART 4</span>
-      <h2>Capping the agent — per-identity rate limiting</h2>
-    </div>
-
-    <div class="col">
-      <p>A compromised or looping agent doesn't need a forbidden tool to do damage — it can hammer a permitted one. So cap it. A rate-limit policy on the studio flow, keyed on the caller's identity, gives each identity its own budget:</p>
-    </div>
-
-<pre><code>{ "policy": "rate-limit",
-  "configuration": {
-    "addHeaders": true,
-    "rate": { "limit": 10, "periodTime": 60, "periodTimeUnit": "SECONDS",
-              "key": "{#context.attributes['user']}" } } }</code></pre>
-
-    <div class="col">
-      <p style="margin-top:18px">That <code>key</code> is the whole trick. The MCP flow exposes the caller as <code>{#context.attributes['user']}</code> — the same attribute the authorization policy keys off — so the limit is per identity, not global. Live, <code>bob</code> capped at 10 per 60 seconds:</p>
-    </div>
-
-<pre><code>bob list_issues call  1–10 : allowed   (HTTP 200)
-bob list_issues call 11–13 : throttled (HTTP 429)</code></pre>
-
-    <div class="col">
-      <p style="margin-top:18px">Governance on <em>how much</em>, not just <em>what</em>. One caller hitting the wall doesn't touch anyone else's budget.</p>
+    <div class="note accent">
+      <div class="lbl">The point worth taking away</div>
+      <p>Three tiers — Admin, Engineering, Triage — over <b>one server and one credential</b>. Each tier is a difference of policy, not a difference of token. Nobody minted a new credential, nobody scoped a second PAT, and nobody has to remember which secret is the "safe" one. Adding a fourth role tomorrow is a policy change, reviewable in the same way you review anything else.</p>
     </div>
   </section>
 
   <!-- PART 5 -->
-  <section aria-label="PII redaction on tool responses">
+  <section aria-label="Rate limiting">
     <div class="part-rule">
       <span class="part-no">PART 5</span>
-      <h2>Redacting what comes back — PII on tool responses</h2>
+      <h2>Governing <em>how much</em>, not just <em>what</em></h2>
     </div>
 
     <div class="col">
-      <p>Authorization decides whether a read is allowed. It says nothing about what the read <em>returns</em>. <code>get_file_contents</code> on the wrong file hands an agent — and the LLM behind it — a name, an email, a phone number. So screen the response. This needs two pieces: a token-classification model resource, and a filtering policy that uses it.</p>
+      <p>Here is the failure mode authorization alone will not catch: a compromised or looping agent doesn't need a forbidden tool to cause damage. It can hammer a perfectly permitted one. Agents retry. Agents loop. An agent that decides to search your codebase four thousand times is behaving entirely within policy.</p>
+      <p>So cap it. A rate limit on the studio flow, keyed on <strong>the caller's identity</strong> rather than on the connection or the source address, gives every identity its own budget:</p>
     </div>
 
-<pre><code><span class="c">// resource: an on-gateway PII model</span>
-{ "name": "pii-model", "type": "ai-model-token-classification",
-  "configuration": { "model": { "type": "GRAVITEE_BERT_SMALL_PII_DETECTION" } } }
-
-<span class="c">// policy: scan responses, redact the matched categories</span>
-{ "policy": "pii-filtering",
-  "configuration": {
-    "resourceName": "pii-model",
-    "categories": ["PERSON","EMAIL","PHONE","FINANCIAL_ACCOUNT","GOVERNMENT_ID","LOCATION"],
-    "threshold": 0.5,
-    "skipResponsePayloadFiltering": false } }</code></pre>
+<pre><code>bob → list_issues, calls  1–10 : allowed   (200)
+bob → list_issues, calls 11–13 : throttled (429)</code></pre>
 
     <div class="col">
-      <p style="margin-top:18px">I proved it against a real file. <code>contact.txt</code> on a branch of the demo repo really contains <code>Jane Smith</code>, <code>jane.smith@example.com</code>, <code>+1-415-555-0142</code>. Read through the governed studio, here's what the agent actually receives:</p>
+      <p style="margin-top:18px">Keying on identity is the whole trick. A global limit protects the upstream server but lets one runaway agent consume everyone's headroom. A per-identity limit contains the blast radius to the caller causing it — one agent hitting the wall doesn't touch anyone else's budget, and the identity in the throttling record tells you immediately which agent to go look at.</p>
+    </div>
+  </section>
+
+  <!-- PART 6 -->
+  <section aria-label="PII redaction">
+    <div class="part-rule">
+      <span class="part-no">PART 6</span>
+      <h2>Governing what comes back</h2>
+    </div>
+
+    <div class="col">
+      <p>Authorization decides whether a read is allowed. It says nothing about what that read <em>returns</em> — and with agents, the return path is the one that should worry you. A permitted file read on the wrong file hands an agent, and the model behind it, a customer's name, email address and phone number. From there it flows into a context window, possibly a log, possibly a third-party model provider.</p>
+      <p>So screen the response. A PII filtering policy scans what the tool returns and redacts the categories you nominate — names, emails, phone numbers, financial and government identifiers, locations. Take a support file that genuinely contains a customer's contact details. Read through a governed endpoint, this is what the agent actually receives:</p>
     </div>
 
 <pre><code>Customer: [REDACTED]
@@ -447,42 +423,68 @@ Phone:    [REDACTED]
 Notes: follow up on the double-charge dispute.</code></pre>
 
     <div class="col">
-      <p style="margin-top:18px">Name, email and phone masked. The non-PII line — the dispute note — passed through untouched. The model runs <strong>inside the gateway</strong>, so no payload leaves the boundary just to be classified.</p>
+      <p style="margin-top:18px">Name, email and phone masked. The line the agent actually needs — the dispute note — passes through untouched, so the agent stays useful. Redaction that destroys the answer isn't a control, it's an outage.</p>
+    </div>
+
+    <div class="note good">
+      <div class="lbl">Why in-gateway inference matters here</div>
+      <p>The classification model runs <b>inside the gateway</b>. The payload is never shipped to an external service just to be inspected — which would mean solving your data-exposure problem by creating a second one. The data stays inside your boundary for the entire round trip.</p>
     </div>
   </section>
 
-  <!-- PART 6 -->
-  <section aria-label="Boundaries and limits">
+  <!-- PART 7 -->
+  <section aria-label="Why platform controls are not enough">
     <div class="part-rule">
-      <span class="part-no">PART 6</span>
-      <h2>Boundaries — GitHub's own controls, and where this stops</h2>
+      <span class="part-no">PART 7</span>
+      <h2>Why the platform's own controls don't close this</h2>
     </div>
 
-    <h3>Why not just use GitHub's own controls</h3>
     <div class="col">
-      <p>Fair question — GitHub gives you knobs. Be precise about where they reach. <strong>PAT scopes</strong> limit what the <em>token</em> can do, but per token, not per caller — every caller behind that token shares the same authority. The MCP server's <strong>read-only mode</strong> is server-wide, all-or-nothing for everyone connected. Neither gives you a <strong>single, default-deny policy</strong> authored once, evaluated per calling identity, per tool, with an <strong>independent decision record</strong> the GitHub side never produces — let alone a per-identity rate cap or a PII screen on what comes back. That's the gap the studio fills.</p>
-      <p style="font-size:14px; color:var(--muted)"><em>The GitHub-side controls here are third-party context — set them tightly, but they're a different layer.</em></p>
+      <p>It's a fair question — source control platforms do give you knobs. It's worth being precise about how far they reach, because they are genuinely useful and genuinely not sufficient.</p>
     </div>
 
-    <h3>Where it stops today</h3>
-    <ul class="limits">
-      <li><b>Authorization is tool-level, not argument-level.</b> I wanted "permit writes to a <code>sandbox</code> repo, forbid <code>production</code>," and it can't be expressed here. I probed it live: the enforcement point passes only the tool <em>name</em> to the policy, never its arguments — a forbid conditioned on any of <code>repo</code>/<code>branch</code>/<code>owner</code>/<code>path</code> in the policy context never triggered, and the Cedar schema is empty. Tool-level is the real, working boundary. Argument-level would need the engine to pass tool arguments to the policy — a roadmap ask.</li>
-      <li><b>PII filtering blocks under a flood.</b> Suited to normal request rates.</li>
-      <li><b>LLM proxies don't expose the same fine-grained-authorization toggle</b> that MCP studios do in this build — an LLM proxy needs the enforcement added by hand.</li>
-      <li><b>The <code>aim</code> module is alpha</b> (<code>alpha.129</code>). Behavior can move between builds.</li>
+    <ul class="takeaways">
+      <li><b>Token scopes limit the token, not the caller.</b> Every caller behind that token shares its authority. Scopes are a ceiling on the credential; they can't distinguish your triage agent from your admin.</li>
+      <li><b>Server-wide read-only mode is all-or-nothing.</b> It applies to everyone connected. You either lose write for the agents that legitimately need it, or keep it for the agents that shouldn't have it.</li>
+      <li><b>Neither produces an independent decision record.</b> There is no per-caller, per-tool audit trail naming the policy that decided the call, because there is no per-caller identity at that point in the chain.</li>
+      <li><b>Neither has any concept of a per-identity rate cap or a redaction screen.</b> These are properties of the call path, not of the credential — so they can only be enforced by something sitting on that path.</li>
+    </ul>
+
+    <div class="col">
+      <p style="margin-top:20px">The practical answer is both, not either. Set the platform-side controls tightly — that's your ceiling. Then let the gateway express the per-caller authority the credential was never able to describe.</p>
+    </div>
+  </section>
+
+  <!-- PART 8 -->
+  <section aria-label="The pattern generalizes">
+    <div class="part-rule">
+      <span class="part-no">PART 8</span>
+      <h2>The pattern, not the product integration</h2>
+    </div>
+
+    <div class="col">
+      <p>Nothing described here is specific to source control. Every control in this walkthrough operates on the MCP call itself — the identity making it, the tool being invoked, the rate it arrives at, the payload coming back. None of them reach into the upstream server's internals, which is exactly why the same model transfers.</p>
+      <p>Swap the server and keep the model: one governed endpoint, one policy set, one rate cap keyed on identity, one screen on the response path. Ticketing systems, internal databases, CRM, observability, a homegrown service someone wrapped in MCP last week — the shape doesn't change.</p>
+    </div>
+
+    <ul class="takeaways">
+      <li><b>Move the decision to the gateway.</b> Per tool, per caller, default-deny — the credential was never the right place to express who may do what.</li>
+      <li><b>Make roles a policy concern.</b> Three tiers over one credential beats three credentials nobody can keep straight.</li>
+      <li><b>Cap how much, not just what.</b> Agents loop; per-identity limits contain the caller responsible instead of everyone around them.</li>
+      <li><b>Screen the return path.</b> An allowed read is not the same as a safe response, and the return path is where sensitive data reaches the model.</li>
     </ul>
 
     <div class="closing">
-      <p class="k">The pattern, not just GitHub.</p>
-      <p>Nothing in any of this is GitHub-specific. The gateway decides <b>per subject, per tool, default-deny</b>; caps <b>per identity</b>; and <b>screens what comes back</b> — on <em>any</em> MCP server it fronts. Swap the server, keep the model: one governed endpoint, one Cedar policy set, one rate cap, one PII screen, per-caller authority the underlying credential can't express on its own.</p>
-      <p><b>GitHub is the first box. The box is replaceable.</b></p>
-      <p>If you're fronting an MCP server for agents and want to compare notes on the policy shape, get in touch.</p>
+      <p class="k">Agents are going to keep asking. The question is what answers back.</p>
+      <p>Every one of these controls exists because an agent is an <b>unusually enthusiastic caller</b> of things you have already exposed. The gateway is where the platform gets to have an opinion about that — per subject, per tool, default-deny, with a record of every decision.</p>
+      <p>Source control is simply the first box. <b>The box is replaceable.</b></p>
+      <p>A good place to start is the narrowest agent you have. Give it one identity, one role, and the shortest list of tools that still lets it do its job — then widen deliberately. <b>The estate that follows is easier to govern than the one you inherit.</b></p>
     </div>
   </section>
 
   <footer>
-    <span>Cole Howard · Field CTO, GraviteeSource · 2026-07-30</span>
-    <span>Verified live · Gravitee Gamma local stack</span>
+    <span>Cole Howard · Field CTO, GraviteeSource</span>
+    <span>MCP &amp; agent governance</span>
   </footer>
 </div>
 

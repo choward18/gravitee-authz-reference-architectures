@@ -257,11 +257,6 @@
 <pre><code>POST .../modules/authz/policies   {"name":…, "kind":"GLOBAL", "policyType":"MCP", "policyText":…}
 POST .../modules/authz/policies/{id}/deploy</code></pre>
 
-    <div class="note warn">
-      <div class="lbl">A correction, because getting it wrong once and saying so is more useful than a quiet fix</div>
-      <p>My first instinct was to author this through the console — create an MCP-scoped policy, pick the studio from a list. That list came up empty, even with the studio deployed, its tools present, and a published plan. Verified again live this session. What works is authoring the Cedar directly. Whether the empty picker is an alpha indexing gap or a step I missed is unconfirmed, and worth a code check before it's stated as product behavior.</p>
-    </div>
-
     <div class="col">
       <p style="margin-top:22px">The three policies that produce a read-mostly Engineering role, by name from the live decision log:</p>
     </div>
@@ -454,12 +449,6 @@ Notes: follow up on the double-charge dispute.</code></pre>
     <div class="col">
       <p style="margin-top:18px">Name, email and phone masked. The non-PII line — the dispute note — passed through untouched. The model runs <strong>inside the gateway</strong>, so no payload leaves the boundary just to be classified.</p>
     </div>
-
-    <div class="note risk">
-      <div class="lbl">One honest catch — found by trying, not by reading</div>
-      <p>The PII model is CPU-bound and runs per response. When I flooded the studio with rapid calls to test the rate limit, the gateway started throwing <code>VertxException: Thread blocked</code> and returning 502s — the model was blocking the event loop under the flood. At normal request rates it's fine, and a paced call stream returns clean.</p>
-      <p>But size it for your traffic, and treat "PII-screen every response, at any concurrency" as a thing to load-test, not assume. It's a real reason to want the inference off the request thread, and worth raising with the AIM team.</p>
-    </div>
   </section>
 
   <!-- PART 6 -->
@@ -478,7 +467,7 @@ Notes: follow up on the double-charge dispute.</code></pre>
     <h3>Where it stops today</h3>
     <ul class="limits">
       <li><b>Authorization is tool-level, not argument-level.</b> I wanted "permit writes to a <code>sandbox</code> repo, forbid <code>production</code>," and it can't be expressed here. I probed it live: the enforcement point passes only the tool <em>name</em> to the policy, never its arguments — a forbid conditioned on any of <code>repo</code>/<code>branch</code>/<code>owner</code>/<code>path</code> in the policy context never triggered, and the Cedar schema is empty. Tool-level is the real, working boundary. Argument-level would need the engine to pass tool arguments to the policy — a roadmap ask.</li>
-      <li><b>PII filtering blocks under a flood</b> (above). Suited to normal request rates.</li>
+      <li><b>PII filtering blocks under a flood.</b> Suited to normal request rates.</li>
       <li><b>LLM proxies don't expose the same fine-grained-authorization toggle</b> that MCP studios do in this build — an LLM proxy needs the enforcement added by hand.</li>
       <li><b>The <code>aim</code> module is alpha</b> (<code>alpha.129</code>). Behavior can move between builds.</li>
     </ul>
